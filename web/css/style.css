@@ -527,6 +527,49 @@ input {
   padding-top: 4px;
 }
 
+/* 首页次级入口（历史成绩 / 错题本） */
+.footer-nav {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 26px;
+  border: 2px solid var(--orange-deep);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  color: var(--orange-deep);
+  background: #FFFFFF;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.btn-ghost svg {
+  display: block;
+}
+
+.btn-ghost:hover {
+  transform: translateY(-2px);
+  background: #FFF4E8;
+  box-shadow: 0 8px 18px rgba(245, 114, 36, 0.25);
+}
+
+.btn-ghost:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.btn-ghost:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 3px;
+}
+
 .footer-tip {
   margin: 12px 0 0;
   color: var(--ink-soft);

@@ -170,7 +170,7 @@ CS.pages.practice = (function () {
 
     const expr = document.createElement("p");
     expr.className = "q-expression";
-    expr.textContent = q.expression + " =";
+    expr.textContent = q.expression;
 
     const input = document.createElement("input");
     input.type = "text";

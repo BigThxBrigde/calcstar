@@ -336,7 +336,7 @@ CS.pages.history = (function () {
     return (
       '<div class="his-q' + stateClass + '">' +
       '  <span class="his-q-seq" aria-hidden="true">' + (index + 1) + "</span>" +
-      '  <span class="his-q-expr">' + esc(q.expression) + " ?</span>" +
+      '  <span class="his-q-expr">' + esc(q.expression) + "</span>" +
       '  <span class="his-q-user">你的答案：<b>' + esc(userText) + "</b></span>" +
       '  <span class="his-q-right">正确答案：<b>' + esc(q.answer) + "</b></span>" +
       '  <span class="his-q-mark" aria-hidden="true">' + mark + "</span>" +

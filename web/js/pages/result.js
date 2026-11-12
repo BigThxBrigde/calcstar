@@ -230,7 +230,7 @@ CS.pages.result = (function () {
 
     const expr = document.createElement("span");
     expr.className = "wrong-expression";
-    expr.textContent = item.expression + " =";
+    expr.textContent = item.expression;
 
     const userPill = document.createElement("span");
     userPill.className = "ans-pill ans-user";

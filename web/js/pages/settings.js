@@ -86,6 +86,18 @@ CS.pages.settings = (function () {
       return { ok: false, message: "请选择每页题数" };
     }
 
+    // 算式目数：2/3 为固定目数，"random" 原样传给后端映射为随机
+    const operandCountRaw = getChecked("operand-count");
+    if (!operandCountRaw) {
+      return { ok: false, message: "请选择算式目数" };
+    }
+    const operandCount = operandCountRaw === "random"
+      ? "random"
+      : parseIntStrict(operandCountRaw);
+
+    // 填空位置：last 固定末尾（求结果），any 位置不定
+    const blankPosition = getChecked("blank-position") === "any" ? "any" : "last";
+
     const config = {
       category: category,
       range_n: rangeRes.value,
@@ -93,7 +105,9 @@ CS.pages.settings = (function () {
       duration_minutes: durationMinutes,
       allow_negative: els.allowNegative.checked,
       include_parentheses: category === "mixed" && els.parentheses.checked,
-      per_page: perPage
+      per_page: perPage,
+      operand_count: operandCount,
+      blank_position: blankPosition
     };
     return { ok: true, config: config };
   }
@@ -167,6 +181,14 @@ CS.pages.settings = (function () {
     els.parentheses = $("with-parentheses");
     els.rowParentheses = $("row-parentheses");
     els.startBtn = $("start-btn");
+
+    // 首页入口：历史成绩 / 错题本
+    $("nav-history").addEventListener("click", function () {
+      CS.router.showPage("page-history");
+    });
+    $("nav-wrongbook").addEventListener("click", function () {
+      CS.router.showPage("page-wrongbook");
+    });
 
     document.querySelectorAll('input[name="category"]').forEach(function (radio) {
       radio.addEventListener("change", updateParenthesesState);

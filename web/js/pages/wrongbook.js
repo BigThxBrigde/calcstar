@@ -173,7 +173,7 @@ CS.pages.wrongbook = (function () {
     const rows = items.map(function (row) {
       return (
         '<div class="wrong-row" role="listitem">' +
-        '  <span class="wrong-expr">' + esc(row.expression) + " ?</span>" +
+        '  <span class="wrong-expr">' + esc(row.expression) + "</span>" +
         '  <span class="wrong-answer"><b>' + esc(row.answer) + "</b></span>" +
         '  <span class="wrong-count"><i class="wrong-count-num">' + esc(Number(row.wrong_count) || 0) + "</i> 次</span>" +
         '  <span class="wrong-time">' + esc(formatDateTime(row.last_wrong_at)) + "</span>" +
