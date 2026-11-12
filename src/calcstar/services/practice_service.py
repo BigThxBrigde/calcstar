@@ -17,6 +17,8 @@ from calcstar.config import (
     DEFAULT_COUNT,
     DEFAULT_PER_PAGE,
     DEFAULT_RANGE,
+    MAX_COUNT,
+    MIN_COUNT,
     OperationCategory,
     get_db_path,
     validate_params,
@@ -26,6 +28,7 @@ from calcstar.data.repositories import (
     create_session,
     get_session_detail,
     increment_correction_round,
+    list_wrong_book,
     mark_session_passed,
     save_questions,
     submit_answers,
@@ -140,6 +143,24 @@ class PracticeService:
         )
         save_questions(self._conn, session_id, question_rows)
 
+        return self._build_practice_result(
+            session_id, question_rows, per_page, duration_minutes, category, range_n
+        )
+
+    @staticmethod
+    def _build_practice_result(
+        session_id: int,
+        question_rows: list[dict],
+        per_page: int,
+        duration_minutes: Optional[int],
+        category: str,
+        range_n: int,
+        source: Optional[str] = None,
+    ) -> dict:
+        """组装创建练习的统一返回结构（questions 不含答案）。
+
+        source 非 None 时附加来源标记（如 "wrong_book"）。
+        """
         total_count = len(question_rows)
         result = {
             "session_id": session_id,
@@ -156,6 +177,8 @@ class PracticeService:
             "category": category,
             "range_n": range_n,
         }
+        if source is not None:
+            result["source"] = source
         return result
 
     def submit_practice(
@@ -305,3 +328,91 @@ class PracticeService:
             "wrong_answers": wrong_answers,
             "correction_round": detail["correction_round"],
         }
+
+    def create_practice_from_wrong_book(self, params: dict) -> dict:
+        """从错题本创建针对性练习（直接采用错题，不走随机生成器）。
+
+        取错题本条目（可按 category 筛选，按 order 默认错误次数倒序）
+        截取前 count 条作为新练习的题目，expression/answer 来自错题
+        本；会话的 category/range_n 优先取 params 指定值，否则取第一
+        条错题记录的值。
+
+        Args:
+            params: category(可选类别筛选)/count(数量上限，缺省取错题
+                全部，超过 MAX_COUNT 截断)/range_n(可选，覆盖取数范围)/
+                duration_minutes/allow_negative/include_parentheses/
+                per_page，后四项语义同 create_practice。
+
+        Returns:
+            结构同 create_practice，另附 "source": "wrong_book"。
+
+        Raises:
+            InvalidParamsError: 按筛选条件错题本为空，或 count/
+                duration_minutes/per_page/range_n 不合法。
+        """
+        category = params.get("category")
+        entries = list_wrong_book(self._conn, category=category)
+        if not entries:
+            raise InvalidParamsError(["错题本中没有符合条件的错题，无法生成练习"])
+
+        count = params.get("count")
+        if count is None:
+            count = min(len(entries), MAX_COUNT)
+        else:
+            count = int(count)
+            if not MIN_COUNT <= count <= MAX_COUNT:
+                raise InvalidParamsError(
+                    [f"题目数量超出限制：{count}（应在 {MIN_COUNT}~{MAX_COUNT} 之间）"]
+                )
+        selected = entries[:count]
+
+        range_n = params.get("range_n")
+        if range_n is None:
+            range_n = selected[0]["range_n"]
+            if range_n is None:
+                range_n = DEFAULT_RANGE
+        duration_minutes = params.get("duration_minutes")
+        allow_negative = bool(params.get("allow_negative", False))
+        include_parentheses = bool(params.get("include_parentheses", False))
+        per_page = params.get("per_page", DEFAULT_PER_PAGE)
+
+        session_category = (
+            category
+            if category is not None
+            else (selected[0]["category"] or OperationCategory.ADD.value)
+        )
+        errors = validate_params(
+            session_category, range_n, len(selected), duration_minutes, per_page
+        )
+        if errors:
+            raise InvalidParamsError(errors)
+
+        question_rows = [
+            {
+                "seq": index,
+                "expression": entry["expression"],
+                "answer": int(entry["answer"]),
+            }
+            for index, entry in enumerate(selected)
+        ]
+        session_id = create_session(
+            self._conn,
+            category=session_category,
+            range_n=range_n,
+            count=len(selected),
+            duration_minutes=duration_minutes,
+            allow_negative=allow_negative,
+            include_parentheses=include_parentheses,
+            per_page=per_page,
+        )
+        save_questions(self._conn, session_id, question_rows)
+
+        return self._build_practice_result(
+            session_id,
+            question_rows,
+            per_page,
+            duration_minutes,
+            session_category,
+            range_n,
+            source="wrong_book",
+        )
