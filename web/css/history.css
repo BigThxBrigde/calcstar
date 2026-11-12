@@ -1,0 +1,436 @@
+/* ============================================================
+   CalcStar 历史成绩页专属样式（Task 8.1）
+   复用 style.css 设计令牌：CSS 变量 / .card / .card-title
+   ============================================================ */
+
+/* ---------- 页头：返回 + 页签（与错题本页共用类名） ---------- */
+.his-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.page-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: #FFFFFF;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.page-back-btn:hover {
+  border-color: var(--yellow-deep);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-chip);
+}
+
+.page-back-btn:active {
+  transform: translateY(1px);
+}
+
+.page-tabs {
+  display: inline-flex;
+  gap: 6px;
+  padding: 5px;
+  border-radius: var(--radius-pill);
+  background: #FFFFFF;
+  border: 2px solid var(--card-line);
+  box-shadow: var(--shadow-card);
+}
+
+.page-tab {
+  padding: 9px 24px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.page-tab:hover {
+  color: var(--ink);
+  transform: translateY(-1px);
+}
+
+.page-tab.is-active {
+  background: linear-gradient(135deg, #FFA14E, var(--orange-deep));
+  color: #FFFFFF;
+  box-shadow: 0 5px 12px rgba(245, 114, 36, 0.35);
+}
+
+/* ---------- 历史卡片 ---------- */
+.his-card {
+  padding: 20px 24px;
+}
+
+/* 表头列 */
+.his-columns,
+.his-row {
+  display: grid;
+  grid-template-columns:
+    minmax(140px, 1.5fr) minmax(84px, 0.9fr) minmax(72px, 0.8fr)
+    minmax(64px, 0.7fr) minmax(64px, 0.7fr) minmax(72px, 0.8fr)
+    minmax(84px, 0.9fr) minmax(88px, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.his-columns {
+  padding: 6px 14px;
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.his-columns span:not(:first-child),
+.his-cell:not(.his-time) {
+  text-align: center;
+}
+
+/* 单条记录（button，可点击进明细） */
+.his-row {
+  width: 100%;
+  padding: 13px 14px;
+  margin-top: 8px;
+  border: 2px solid var(--line);
+  border-radius: 18px;
+  background: #FFFDF6;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+  transition: transform 0.15s ease, border-color 0.15s ease,
+    box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.his-row:hover {
+  border-color: var(--yellow);
+  background: #FFF9E8;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-chip);
+}
+
+.his-row:active {
+  transform: translateY(0);
+}
+
+.his-row:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
+}
+
+.his-row.is-pass {
+  border-color: rgba(79, 185, 107, 0.45);
+  background: #F4FBF5;
+}
+
+.his-time {
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+
+.his-strong {
+  color: var(--orange-deep);
+  font-weight: 900;
+  font-size: 16px;
+}
+
+/* 类别胶囊（糖果色） */
+.his-cat {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 800;
+  color: #FFFFFF;
+  background: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.his-cat-add { background: var(--orange); }
+.his-cat-sub { background: var(--blue); }
+.his-cat-add_sub { background: var(--green); }
+.his-cat-mul { background: var(--purple); }
+.his-cat-div { background: var(--yellow-deep); }
+.his-cat-mul_div { background: var(--pink); }
+.his-cat-mixed { background: var(--red); }
+
+/* 状态徽章 */
+.his-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.his-badge-pass {
+  color: var(--green-deep);
+  background: rgba(79, 185, 107, 0.16);
+  border: 2px solid rgba(79, 185, 107, 0.45);
+}
+
+.his-badge-miss {
+  color: var(--orange-deep);
+  background: rgba(255, 138, 61, 0.14);
+  border: 2px solid rgba(255, 138, 61, 0.5);
+}
+
+.his-badge-doing {
+  color: var(--blue-deep);
+  background: rgba(78, 155, 245, 0.14);
+  border: 2px solid rgba(78, 155, 245, 0.45);
+}
+
+/* ---------- 分页 ---------- */
+.his-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.pager-btn {
+  padding: 9px 22px;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: #FFFFFF;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.pager-btn:hover:not(:disabled) {
+  border-color: var(--yellow-deep);
+  transform: translateY(-1px);
+}
+
+.pager-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.pager-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pager-info {
+  color: var(--ink-soft);
+  font-size: 14px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 明细视图 ---------- */
+.his-detail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.his-detail-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  color: var(--ink-soft);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.his-detail-summary b {
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.his-detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* 单题行：题号 + 算式 + 你的答案 + 正确答案 + 对错标记 */
+.his-q {
+  display: grid;
+  grid-template-columns: 40px minmax(140px, 1.2fr) minmax(120px, 1fr) minmax(120px, 1fr) 44px;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  background: #FFFDF6;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.his-q.is-right {
+  border-color: rgba(79, 185, 107, 0.45);
+  background: #F4FBF5;
+}
+
+.his-q.is-wrong {
+  border-color: rgba(232, 93, 93, 0.45);
+  background: #FEF4F4;
+}
+
+.his-q.is-unknown {
+  border-style: dashed;
+}
+
+.his-q-seq {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #FFF1D6;
+  color: var(--orange-deep);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.his-q-expr {
+  font-weight: 900;
+  font-size: 17px;
+  letter-spacing: 0.5px;
+}
+
+.his-q-user b {
+  font-weight: 900;
+}
+
+.his-q-right b {
+  color: var(--green-deep);
+  font-weight: 900;
+}
+
+.his-q-mark {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--ink-soft);
+  background: #F2E9D8;
+}
+
+.is-right .his-q-mark {
+  color: #FFFFFF;
+  background: var(--green);
+}
+
+.is-wrong .his-q-mark {
+  color: #FFFFFF;
+  background: var(--red);
+}
+
+/* ---------- 空状态 / 加载态 ---------- */
+.his-empty {
+  padding: 48px 20px;
+  text-align: center;
+}
+
+.his-empty-icon {
+  display: block;
+  font-size: 44px;
+  margin-bottom: 10px;
+}
+
+.his-empty-title {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 900;
+}
+
+.his-empty-tip {
+  margin: 8px 0 0;
+  color: var(--ink-soft);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.his-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 44px 20px;
+  color: var(--ink-soft);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.his-spinner {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 3px solid var(--card-line);
+  border-top-color: var(--orange);
+  animation: his-spin 0.8s linear infinite;
+}
+
+@keyframes his-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- 动效降级（与 style.css 全局规则互补） ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .his-spinner {
+    animation-duration: 0.01ms !important;
+  }
+
+  .his-row,
+  .page-back-btn,
+  .page-tab,
+  .pager-btn {
+    transition: none !important;
+  }
+}
+
+/* ---------- 窄屏兜底：行内横向滚动 ---------- */
+@media (max-width: 1023px) {
+  .his-columns,
+  .his-row,
+  .his-q {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    justify-content: start;
+  }
+
+  #history-list-view,
+  #history-detail-view {
+    overflow-x: auto;
+  }
+
+  .his-row,
+  .his-q {
+    min-width: 720px;
+  }
+}
