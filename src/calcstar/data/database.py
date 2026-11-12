@@ -37,7 +37,10 @@ def connect(db_path: _DBPath) -> sqlite3.Connection:
 def init_db(conn: sqlite3.Connection) -> None:
     """初始化数据库表结构（幂等，可重复调用）。
 
-    创建练习记录主表 sessions：
+    创建三张表——练习记录主表 sessions、题目明细表 questions
+    以及错题本 wrong_book。
+
+    练习记录主表 sessions：
 
     - id: 主键自增；
     - category: 题型类别（如 add/sub/mul/div/mixed）；
@@ -51,7 +54,54 @@ def init_db(conn: sqlite3.Connection) -> None:
     - correction_round: 已完成的订正轮数，默认 0；
     - status: 会话状态（in_progress/submitted/passed），默认 in_progress；
     - passed: 是否达标（1/0），默认 0。
+
+    题目明细表 questions（随会话级联删除）：
+
+    - session_id: 外键指向 sessions(id)，ON DELETE CASCADE；
+    - seq: 题目在会话内的序号，从 0 开始，与会话联合唯一；
+    - expression / answer: 题目表达式与正确答案；
+    - user_answer: 用户作答，NULL 表示未作答；
+    - is_correct: 判分结果（1/0），NULL 表示未判分；
+    - correction_count: 该题答错的次数（订正中再错累计），默认 0。
+
+    错题本 wrong_book（按表达式+答案去重聚合）：
+
+    - expression / answer: 联合唯一键，同一题只存一条记录；
+    - category / range_n: 最近一次做错时的题型与范围；
+    - wrong_count: 累计做错次数，默认 1；
+    - last_wrong_at: 最近一次做错时间（ISO 格式文本）。
     """
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS questions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id INTEGER NOT NULL,
+            seq INTEGER NOT NULL,
+            expression TEXT NOT NULL,
+            answer INTEGER NOT NULL,
+            user_answer INTEGER,
+            is_correct INTEGER,
+            correction_count INTEGER NOT NULL DEFAULT 0,
+            UNIQUE(session_id, seq),
+            FOREIGN KEY (session_id) REFERENCES sessions(id)
+                ON DELETE CASCADE
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS wrong_book (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            expression TEXT NOT NULL,
+            answer INTEGER NOT NULL,
+            category TEXT,
+            range_n INTEGER,
+            wrong_count INTEGER NOT NULL DEFAULT 1,
+            last_wrong_at TEXT,
+            UNIQUE(expression, answer)
+        )
+        """
+    )
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS sessions (
