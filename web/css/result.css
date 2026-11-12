@@ -1,0 +1,419 @@
+/* ============================================================
+   CalcStar 结果与订正页专属样式（Task 7）
+   复用 style.css 设计令牌：奶油底 + 糖果色 + 大圆角 + 胶囊
+   ============================================================ */
+
+/* ---------- 结果英雄卡 ---------- */
+.result-hero {
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  padding: 34px 26px 30px;
+}
+
+.result-trophy {
+  width: 76px;
+  height: 76px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--yellow), var(--yellow-deep));
+  color: #FFFFFF;
+  box-shadow: 0 10px 24px rgba(242, 169, 0, 0.35);
+}
+
+.is-celebrate .result-trophy {
+  animation: trophy-pop 0.55s ease both;
+}
+
+@keyframes trophy-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.4) rotate(-14deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.12) rotate(6deg);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.score-ring {
+  width: 150px;
+  height: 150px;
+  margin: 16px auto 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #FFA14E, var(--orange-deep));
+  box-shadow: var(--shadow-orange);
+}
+
+.score-core {
+  width: 126px;
+  height: 126px;
+  border-radius: 50%;
+  background: #FFFDF6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.score-num {
+  font-size: 46px;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--orange-deep);
+  font-variant-numeric: tabular-nums;
+}
+
+.score-unit {
+  margin-top: 4px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ink-soft);
+}
+
+.result-title {
+  margin: 10px 0 4px;
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: 1px;
+}
+
+.result-sub {
+  margin: 0;
+  color: var(--ink-soft);
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.result-stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.stat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: var(--radius-pill);
+  background: #FFF6E1;
+  border: 2px solid var(--line);
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.stat-chip .chip-label {
+  color: var(--ink-soft);
+}
+
+.stat-chip .chip-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-chip.is-timeout {
+  border-color: rgba(232, 93, 93, 0.45);
+  background: #FFF0F0;
+  color: var(--red);
+}
+
+.result-actions {
+  margin-top: 22px;
+}
+
+.result-actions .btn-primary {
+  min-width: 220px;
+  justify-content: center;
+}
+
+/* ---------- 庆祝星星（仅全对时显示） ---------- */
+.celebrate-star {
+  position: absolute;
+  color: var(--yellow);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.is-celebrate .celebrate-star {
+  opacity: 0.95;
+  animation: star-twinkle 2.4s ease-in-out infinite;
+}
+
+.celebrate-star.s1 {
+  top: 20px;
+  left: 12%;
+}
+
+.celebrate-star.s2 {
+  top: 40px;
+  right: 10%;
+  color: var(--pink);
+  animation-delay: 0.4s;
+}
+
+.celebrate-star.s3 {
+  bottom: 28px;
+  left: 16%;
+  color: var(--blue);
+  animation-delay: 0.8s;
+}
+
+.celebrate-star.s4 {
+  bottom: 44px;
+  right: 20%;
+  color: var(--purple);
+  animation-delay: 1.2s;
+}
+
+.celebrate-star.s5 {
+  top: 46%;
+  left: 5%;
+  color: var(--orange);
+  animation-delay: 1.6s;
+}
+
+@keyframes star-twinkle {
+  0%, 100% {
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) scale(1.15) rotate(14deg);
+  }
+}
+
+/* ---------- 错题订正卡 ---------- */
+.wrong-card {
+  margin-top: 20px;
+}
+
+.wrong-card .card-title {
+  margin-bottom: 6px;
+}
+
+.wrong-card .wrong-ticon {
+  color: var(--pink);
+}
+
+.round-badge {
+  margin-left: auto;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  background: #FFF6E1;
+  border: 2px solid var(--line);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.wrong-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.wrong-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+  padding: 14px 2px;
+  border-top: 2px dashed var(--line);
+}
+
+.wrong-row:first-child {
+  border-top: none;
+}
+
+.wrong-row.is-filled .correction-input {
+  border-color: var(--green);
+}
+
+.wrong-seq {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--red);
+  color: #FFFFFF;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.wrong-expression {
+  flex: 1 1 150px;
+  min-width: 150px;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.ans-pill {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  font-weight: 800;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ans-label {
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+.ans-user {
+  background: #FFEBEB;
+  border: 2px solid rgba(232, 93, 93, 0.4);
+  color: var(--red);
+}
+
+.ans-correct {
+  background: #E9F7EE;
+  border: 2px solid rgba(79, 185, 107, 0.4);
+  color: var(--green-deep);
+}
+
+.correction-input {
+  flex: none;
+  width: 130px;
+  padding: 9px 14px;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: #FFFDF6;
+  color: var(--ink);
+  font-size: 17px;
+  font-weight: 800;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.correction-input:hover {
+  border-color: var(--yellow-deep);
+}
+
+.correction-input:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: var(--ring);
+}
+
+.wrong-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.wrong-footer .btn-primary {
+  min-width: 200px;
+  justify-content: center;
+}
+
+.passed-note {
+  text-align: center;
+  margin: 4px 0 2px;
+  color: var(--green-deep);
+  font-weight: 800;
+  font-size: 15px;
+}
+
+/* ---------- 次级按钮（柔和奶油胶囊） ---------- */
+.btn-soft {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--line);
+  background: #FFF6E1;
+  color: var(--ink-soft);
+  font-weight: 800;
+  font-size: 15px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.btn-soft:hover {
+  border-color: var(--yellow-deep);
+  color: var(--ink);
+  transform: translateY(-1px);
+}
+
+.btn-soft:active {
+  transform: translateY(1px);
+}
+
+/* ---------- 空状态 ---------- */
+.empty-hint {
+  padding: 64px 20px;
+  text-align: center;
+  color: var(--ink-soft);
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.empty-hint .btn-soft {
+  margin-top: 16px;
+}
+
+/* ---------- 小屏微调 ---------- */
+@media (max-width: 719px) {
+  .result-hero {
+    padding: 26px 16px 24px;
+  }
+
+  .score-ring {
+    width: 132px;
+    height: 132px;
+  }
+
+  .score-core {
+    width: 110px;
+    height: 110px;
+  }
+
+  .result-title {
+    font-size: 20px;
+  }
+
+  .wrong-expression {
+    flex-basis: 100%;
+  }
+
+  .correction-input {
+    flex: 1 1 120px;
+  }
+}
+
+/* ---------- 动效降级（style.css 已全局降级，此处显式兜底） ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .is-celebrate .celebrate-star {
+    animation: none;
+    opacity: 0.9;
+  }
+
+  .is-celebrate .result-trophy {
+    animation: none;
+  }
+}
