@@ -8,8 +8,10 @@
   除法整除、乘法积不超界等），并尽量避免 ``a+0``、``a-0``、
   ``a-a``、``0×a``、``a÷1`` 这类过于简单的题目（空间不足时自动
   放宽）；
-- 混合运算含 2–3 个运算符，严格遵循先乘除后加减，每个除法
-  步骤整除，所有中间结果与最终结果均落在有效范围内；
+- 批量生成时以表达式文本判重，保证题目互不重复；候选空间
+  不足时按级别放宽约束（放开零因子与 ``a÷1`` 限制、必要时
+  穷举全部合法组合），仍不足则返回实际可用数量，绝不重复、
+  绝不死循环；
 - 纯逻辑实现，不做任何 IO。
 """
 
@@ -38,6 +40,14 @@ _HIGH_PRECEDENCE = (_OP_MUL, _OP_DIV)
 _MAX_ATTEMPTS = 100
 #: 混合运算单题的最大采样尝试次数（含整除性等拒绝重试）
 _MIXED_ATTEMPTS = 300
+#: 批量生成每个放宽级别的基础尝试次数上限
+_BATCH_ATTEMPTS_BASE = 500
+#: 批量生成每个放宽级别按题数追加的尝试次数
+_BATCH_ATTEMPTS_PER_QUESTION = 60
+#: 同一放宽级别内连续未产出新题（采样失败或重复）的容忍次数
+_LEVEL_STALL_LIMIT = 500
+#: 穷举兜底允许的最大候选格数，超过视为空间充足、跳过穷举
+_MAX_ENUM_CELLS = 250_000
 
 
 def _make_question(
@@ -334,31 +344,119 @@ _CATEGORY_GENERATORS = {
 }
 
 
-def _generate_one(rng: random.Random, config: PracticeConfig) -> Question:
-    """按放宽级别从高到低（0 -> 1）生成一道题，全部失败返回 None。
+# ---- 穷举兜底：候选空间耗尽时枚举全部合法组合 ----
 
-    级别 0 的约束更严格（避免零因子、``a÷1`` 等平凡题目），
-    级别 1 放开这些限制，保证小范围下仍能出题。
+
+def _enumerate_add(config: PracticeConfig) -> list[Question]:
+    """穷举全部加法组合（含 ``+0``）。"""
+    n = config.range_n
+    return [
+        _make_question((a, b), (_OP_ADD,), a + b)
+        for a in range(n + 1)
+        for b in range(n + 1 - a)
+    ]
+
+
+def _enumerate_sub(config: PracticeConfig) -> list[Question]:
+    """穷举全部减法组合（含 ``-0`` 与 ``a-a``）。"""
+    n = config.range_n
+    if config.allow_negative:
+        return [
+            _make_question((a, b), (_OP_SUB,), a - b)
+            for a in range(n + 1)
+            for b in range(n + 1)
+        ]
+    return [
+        _make_question((a, b), (_OP_SUB,), a - b)
+        for a in range(n + 1)
+        for b in range(a + 1)
+    ]
+
+
+def _enumerate_mul(config: PracticeConfig) -> list[Question]:
+    """穷举全部乘法组合（含 0 因子），积不超过 ``N``。"""
+    n = config.range_n
+    questions: list[Question] = []
+    for a in range(n + 1):
+        for b in range(n + 1 if a == 0 else n // a + 1):
+            questions.append(_make_question((a, b), (_OP_MUL,), a * b))
+    return questions
+
+
+def _enumerate_div(config: PracticeConfig) -> list[Question]:
+    """穷举全部除法组合（含 ``a÷1``），商与被除数均不超界。"""
+    n = config.range_n
+    questions: list[Question] = []
+    for quotient in range(1, n + 1):
+        for divisor in range(1, n // quotient + 1):
+            dividend = quotient * divisor
+            questions.append(_make_question((dividend, divisor), (_OP_DIV,), quotient))
+    return questions
+
+
+def _enumerate_all(config: PracticeConfig, rng: random.Random) -> list[Question]:
+    """穷举当前约束（级别 1）下全部合法表达式，作为兜底候选。
+
+    仅对操作数固定的简单类别实施；混合运算候选空间为指数级，
+    放宽采样已能覆盖小范围空间，直接返回空列表。数值范围过大
+    导致候选格数超出 :data:`_MAX_ENUM_CELLS` 时同样跳过穷举
+    （此时采样必然充足）。返回前随机洗牌，保证补题分布均匀。
     """
-    generator = _CATEGORY_GENERATORS[config.category]
-    for level in (0, 1):
-        question = generator(rng, config, level)
-        if question is not None:
-            return question
-    return None
+    category = config.category
+    if category is OperationCategory.MIXED or (config.range_n + 1) ** 2 > _MAX_ENUM_CELLS:
+        return []
+    if category is OperationCategory.ADD:
+        candidates = _enumerate_add(config)
+    elif category is OperationCategory.SUB:
+        candidates = _enumerate_sub(config)
+    elif category is OperationCategory.MUL:
+        candidates = _enumerate_mul(config)
+    elif category is OperationCategory.DIV:
+        candidates = _enumerate_div(config)
+    elif category is OperationCategory.ADD_SUB:
+        candidates = _enumerate_add(config) + _enumerate_sub(config)
+    else:
+        candidates = _enumerate_mul(config) + _enumerate_div(config)
+    rng.shuffle(candidates)
+    return candidates
 
 
 def generate_questions(config: PracticeConfig) -> list[Question]:
-    """按配置批量生成口算题目。
+    """按配置批量生成口算题目，保证互不重复。
 
-    返回恰好 ``config.count`` 道题目（小范围下由放宽级别保证
-    可出题；混合运算在极小范围内可能少于请求数量）。
+    以表达式文本判重，产出至多 ``config.count`` 道题目。生成按
+    放宽级别逐级进行：级别 0 尽量避免 ``a+0``、``a-0``、``a-a``、
+    ``0×a``、``a÷1`` 等平凡题目；级别 1 放开这些限制；候选空间
+    仍不足时穷举全部合法组合去重补齐。可用组合总数少于请求数
+    量时返回全部可用组合。各级均设尝试次数与停滞上限，不会
+    死循环。
     """
     rng = random.Random(config.seed)
     questions: list[Question] = []
-    for _ in range(config.count):
-        question = _generate_one(rng, config)
-        if question is None:
+    seen: set[str] = set()
+    generator = _CATEGORY_GENERATORS[config.category]
+    max_attempts = _BATCH_ATTEMPTS_BASE + _BATCH_ATTEMPTS_PER_QUESTION * config.count
+    for level in (0, 1):
+        stall = 0
+        attempts = 0
+        while len(questions) < config.count and attempts < max_attempts:
+            attempts += 1
+            question = generator(rng, config, level)
+            if question is None or question.expression in seen:
+                stall += 1
+                if stall >= _LEVEL_STALL_LIMIT:
+                    break
+                continue
+            stall = 0
+            seen.add(question.expression)
+            questions.append(question)
+        if len(questions) >= config.count:
+            return questions
+    for question in _enumerate_all(config, rng):
+        if len(questions) >= config.count:
             break
+        if question.expression in seen:
+            continue
+        seen.add(question.expression)
         questions.append(question)
     return questions
