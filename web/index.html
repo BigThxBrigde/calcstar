@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CalcStar · 口算练习</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="app-header">
+  <span class="brand-badge" aria-hidden="true">
+    <svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+  </span>
+  <div class="brand-text">
+    <h1 class="brand-title">CalcStar 口算练习</h1>
+    <p class="brand-sub">每天练一练，争做口算小达人！</p>
+  </div>
+  <span class="deco deco-1" aria-hidden="true">
+    <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+  </span>
+  <span class="deco deco-2" aria-hidden="true">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+  </span>
+  <span class="deco deco-3" aria-hidden="true">
+    <svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor"><path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z"/></svg>
+  </span>
+</header>
+
+<main class="app-main">
+
+  <!-- ===== 设置页（本任务实现） ===== -->
+  <section id="page-settings" class="page active" aria-label="练习设置">
+    <div class="settings-grid">
+
+      <div class="card card-wide" id="card-category">
+        <h2 class="card-title">
+          <svg class="ticon" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          选择运算
+        </h2>
+        <div class="chip-group" role="radiogroup" aria-label="运算类别">
+          <label class="chip"><input type="radio" name="category" value="add" checked><span>加法</span></label>
+          <label class="chip"><input type="radio" name="category" value="sub"><span>减法</span></label>
+          <label class="chip"><input type="radio" name="category" value="add_sub"><span>加减法</span></label>
+          <label class="chip"><input type="radio" name="category" value="mul"><span>乘法</span></label>
+          <label class="chip"><input type="radio" name="category" value="div"><span>除法</span></label>
+          <label class="chip"><input type="radio" name="category" value="mul_div"><span>乘除法</span></label>
+          <label class="chip"><input type="radio" name="category" value="mixed"><span>四则混合</span></label>
+        </div>
+      </div>
+
+      <div class="card" id="card-range">
+        <h2 class="card-title">
+          <svg class="ticon" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          数值范围
+        </h2>
+        <div class="chip-group" role="radiogroup" aria-label="数值范围">
+          <label class="chip"><input type="radio" name="range" value="10" checked><span>10 以内</span></label>
+          <label class="chip"><input type="radio" name="range" value="20"><span>20 以内</span></label>
+          <label class="chip"><input type="radio" name="range" value="30"><span>30 以内</span></label>
+          <label class="chip"><input type="radio" name="range" value="50"><span>50 以内</span></label>
+          <label class="chip"><input type="radio" name="range" value="100"><span>100 以内</span></label>
+          <label class="chip chip-custom"><input type="radio" name="range" value="custom"><span>自定义</span></label>
+        </div>
+        <div class="custom-row hidden" id="row-custom-range">
+          <label class="custom-label" for="custom-range">输入数值范围</label>
+          <input class="number-input" id="custom-range" type="number" min="1" max="999" placeholder="1~999">
+        </div>
+      </div>
+
+      <div class="card" id="card-count">
+        <h2 class="card-title">
+          <svg class="ticon" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          题目数量
+        </h2>
+        <div class="chip-group" role="radiogroup" aria-label="题目数量">
+          <label class="chip"><input type="radio" name="count" value="20" checked><span>20 题</span></label>
+          <label class="chip"><input type="radio" name="count" value="50"><span>50 题</span></label>
+          <label class="chip"><input type="radio" name="count" value="100"><span>100 题</span></label>
+          <label class="chip chip-custom"><input type="radio" name="count" value="custom"><span>自定义</span></label>
+        </div>
+        <div class="custom-row hidden" id="row-custom-count">
+          <label class="custom-label" for="custom-count">输入题目数量</label>
+          <input class="number-input" id="custom-count" type="number" min="1" max="200" placeholder="1~200">
+        </div>
+      </div>
+
+      <div class="card" id="card-duration">
+        <h2 class="card-title">
+          <svg class="ticon" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 2c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm9 7h-6.13l-2.05 3.83.81 1.17H21v2h-8.06l-1.53 2.85c.83.32 1.59.79 1.59 1.65 0 0-1 .5-4 .5s-4-.5-4-.5c0-1.43 1.49-2.19 2.79-2.87L9 15.42S11.9 10 12 10h6c1.1 0 2 .9 2 2h.01L21 9z"/></svg>
+          练习限时
+        </h2>
+        <div class="chip-group" role="radiogroup" aria-label="练习限时">
+          <label class="chip"><input type="radio" name="duration" value="none" checked><span>不限时</span></label>
+          <label class="chip"><input type="radio" name="duration" value="5"><span>5 分钟</span></label>
+          <label class="chip"><input type="radio" name="duration" value="10"><span>10 分钟</span></label>
+          <label class="chip"><input type="radio" name="duration" value="15"><span>15 分钟</span></label>
+          <label class="chip"><input type="radio" name="duration" value="30"><span>30 分钟</span></label>
+          <label class="chip chip-custom"><input type="radio" name="duration" value="custom"><span>自定义</span></label>
+        </div>
+        <div class="custom-row hidden" id="row-custom-duration">
+          <label class="custom-label" for="custom-duration">输入限时分钟数</label>
+          <input class="number-input" id="custom-duration" type="number" min="1" max="180" placeholder="1~180">
+        </div>
+      </div>
+
+      <div class="card" id="card-more">
+        <h2 class="card-title">
+          <svg class="ticon" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z"/></svg>
+          更多选项
+        </h2>
+        <div class="option-row">
+          <div class="option-text">
+            <span class="option-name">允许负数</span>
+            <span class="option-hint">开启后减法可能出现负数结果</span>
+          </div>
+          <label class="switch" aria-label="允许负数">
+            <input type="checkbox" id="allow-negative">
+            <span class="track"></span>
+          </label>
+        </div>
+        <div class="option-row is-disabled" id="row-parentheses">
+          <div class="option-text">
+            <span class="option-name">包含括号</span>
+            <span class="option-hint">仅四则混合运算可用</span>
+          </div>
+          <label class="switch" aria-label="包含括号">
+            <input type="checkbox" id="with-parentheses" disabled>
+            <span class="track"></span>
+          </label>
+        </div>
+        <div class="option-row option-column">
+          <span class="option-name">每页题数</span>
+          <div class="chip-group" role="radiogroup" aria-label="每页题数">
+            <label class="chip"><input type="radio" name="per-page" value="5"><span>5 题</span></label>
+            <label class="chip"><input type="radio" name="per-page" value="10" checked><span>10 题</span></label>
+            <label class="chip"><input type="radio" name="per-page" value="20"><span>20 题</span></label>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-footer card-wide">
+        <button type="button" id="start-btn" class="btn-primary">
+          <span class="btn-label">开始练习</span>
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        </button>
+        <p class="footer-tip">选好参数，点击按钮出发吧！</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===== 以下页面容器由后续任务填充 ===== -->
+  <section id="page-practice" class="page" aria-label="练习答题"></section>
+  <section id="page-result" class="page" aria-label="成绩结果"></section>
+  <section id="page-history" class="page" aria-label="历史记录"></section>
+  <section id="page-wrongbook" class="page" aria-label="错题本"></section>
+
+</main>
+
+<!-- Qt 官方 qwebchannel.js（取自本机 PyQtWebEngine-Qt5 5.15.2 资源 qrc:///qtwebchannel/qwebchannel.js，原样内联） -->
+<script>
+/****************************************************************************
+**
+** Copyright (C) 2016 The Qt Company Ltd.
+** Copyright (C) 2016 Klarälvdalens Datakonsult AB, a KDAB Group company, info@kdab.com, author Milian Wolff <milian.wolff@kdab.com>
+** Contact: https://www.qt.io/licensing/
+**
+** This file is part of the QtWebChannel module of the Qt Toolkit.
+**
+** $QT_BEGIN_LICENSE:LGPL$
+** Commercial License Usage
+** Licensees holding valid commercial Qt licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and The Qt Company. For licensing terms
+** and conditions see https://www.qt.io/terms-conditions. For further
+** information use the contact form at https://www.qt.io/contact-us.
+**
+** GNU Lesser General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU Lesser
+** General Public License version 3 as published by the Free Software
+** Foundation and appearing in the file LICENSE.LGPL3 included in the
+** packaging of this file. Please review the following information to
+** ensure the GNU Lesser General Public License version 3 requirements
+** will be met: https://www.gnu.org/licenses/lgpl-3.0.html.
+**
+** GNU General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU General
+** Public License version 2.0 or (at your option) the GNU General
+** Public license version 3 or any later version approved by the KDE Free
+** Qt Foundation. The licenses are as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL2 and LICENSE.GPL3
+** included in the packaging of this file. Please review the following
+** information to ensure the GNU General Public License requirements will
+** be met: https://www.gnu.org/licenses/gpl-2.0.html and
+** https://www.gnu.org/licenses/gpl-3.0.html.
+**
+** $QT_END_LICENSE$
+**
+****************************************************************************/
+
+"use strict";
+
+var QWebChannelMessageTypes = {
+    signal: 1,
+    propertyUpdate: 2,
+    init: 3,
+    idle: 4,
+    debug: 5,
+    invokeMethod: 6,
+    connectToSignal: 7,
+    disconnectFromSignal: 8,
+    setProperty: 9,
+    response: 10,
+};
+
+var QWebChannel = function(transport, initCallback)
+{
+    if (typeof transport !== "object" || typeof transport.send !== "function") {
+        console.error("The QWebChannel expects a transport object with a send function and onmessage callback property." +
+                      " Given is: transport: " + typeof(transport) + ", transport.send: " + typeof(transport.send));
+        return;
+    }
+
+    var channel = this;
+    this.transport = transport;
+
+    this.send = function(data)
+    {
+        if (typeof(data) !== "string") {
+            data = JSON.stringify(data);
+        }
+        channel.transport.send(data);
+    }
+
+    this.transport.onmessage = function(message)
+    {
+        var data = message.data;
+        if (typeof data === "string") {
+            data = JSON.parse(data);
+        }
+        switch (data.type) {
+            case QWebChannelMessageTypes.signal:
+                channel.handleSignal(data);
+                break;
+            case QWebChannelMessageTypes.response:
+                channel.handleResponse(data);
+                break;
+            case QWebChannelMessageTypes.propertyUpdate:
+                channel.handlePropertyUpdate(data);
+                break;
+            default:
+                console.error("invalid message received:", message.data);
+                break;
+        }
+    }
+
+    this.execCallbacks = {};
+    this.execId = 0;
+    this.exec = function(data, callback)
+    {
+        if (!callback) {
+            // if no callback is given, send directly
+            channel.send(data);
+            return;
+        }
+        if (channel.execId === Number.MAX_VALUE) {
+            // wrap
+            channel.execId = Number.MIN_VALUE;
+        }
+        if (data.hasOwnProperty("id")) {
+            console.error("Cannot exec message with property id: " + JSON.stringify(data));
+            return;
+        }
+        data.id = channel.execId++;
+        channel.execCallbacks[data.id] = callback;
+        channel.send(data);
+    };
+
+    this.objects = {};
+
+    this.handleSignal = function(message)
+    {
+        var object = channel.objects[message.object];
+        if (object) {
+            object.signalEmitted(message.signal, message.args);
+        } else {
+            console.warn("Unhandled signal: " + message.object + "::" + message.signal);
+        }
+    }
+
+    this.handleResponse = function(message)
+    {
+        if (!message.hasOwnProperty("id")) {
+            console.error("Invalid response message received: ", JSON.stringify(message));
+            return;
+        }
+        channel.execCallbacks[message.id](message.data);
+        delete channel.execCallbacks[message.id];
+    }
+
+    this.handlePropertyUpdate = function(message)
+    {
+        message.data.forEach(data => {
+            var object = channel.objects[data.object];
+            if (object) {
+                object.propertyUpdate(data.signals, data.properties);
+            } else {
+                console.warn("Unhandled property update: " + data.object + "::" + data.signal);
+            }
+        });
+        channel.exec({type: QWebChannelMessageTypes.idle});
+    }
+
+    this.debug = function(message)
+    {
+        channel.send({type: QWebChannelMessageTypes.debug, data: message});
+    };
+
+    channel.exec({type: QWebChannelMessageTypes.init}, function(data) {
+        for (const objectName of Object.keys(data)) {
+            new QObject(objectName, data[objectName], channel);
+        }
+
+        // now unwrap properties, which might reference other registered objects
+        for (const objectName of Object.keys(channel.objects)) {
+            channel.objects[objectName].unwrapProperties();
+        }
+
+        if (initCallback) {
+            initCallback(channel);
+        }
+        channel.exec({type: QWebChannelMessageTypes.idle});
+    });
+};
+
+function QObject(name, data, webChannel)
+{
+    this.__id__ = name;
+    webChannel.objects[name] = this;
+
+    // List of callbacks that get invoked upon signal emission
+    this.__objectSignals__ = {};
+
+    // Cache of all properties, updated when a notify signal is emitted
+    this.__propertyCache__ = {};
+
+    var object = this;
+
+    // ----------------------------------------------------------------------
+
+    this.unwrapQObject = function(response)
+    {
+        if (response instanceof Array) {
+            // support list of objects
+            return response.map(qobj => object.unwrapQObject(qobj))
+        }
+        if (!(response instanceof Object))
+            return response;
+
+        if (!response["__QObject*__"] || response.id === undefined) {
+            var jObj = {};
+            for (const propName of Object.keys(response)) {
+                jObj[propName] = object.unwrapQObject(response[propName]);
+            }
+            return jObj;
+        }
+
+        var objectId = response.id;
+        if (webChannel.objects[objectId])
+            return webChannel.objects[objectId];
+
+        if (!response.data) {
+            console.error("Cannot unwrap unknown QObject " + objectId + " without data.");
+            return;
+        }
+
+        var qObject = new QObject( objectId, response.data, webChannel );
+        qObject.destroyed.connect(function() {
+            if (webChannel.objects[objectId] === qObject) {
+                delete webChannel.objects[objectId];
+                // reset the now deleted QObject to an empty {} object
+                // just assigning {} though would not have the desired effect, but the
+                // below also ensures all external references will see the empty map
+                // NOTE: this detour is necessary to workaround QTBUG-40021
+                Object.keys(qObject).forEach(name => delete qObject[name]);
+            }
+        });
+        // here we are already initialized, and thus must directly unwrap the properties
+        qObject.unwrapProperties();
+        return qObject;
+    }
+
+    this.unwrapProperties = function()
+    {
+        for (const propertyIdx of Object.keys(object.__propertyCache__)) {
+            object.__propertyCache__[propertyIdx] = object.unwrapQObject(object.__propertyCache__[propertyIdx]);
+        }
+    }
+
+    function addSignal(signalData, isPropertyNotifySignal)
+    {
+        var signalName = signalData[0];
+        var signalIndex = signalData[1];
+        object[signalName] = {
+            connect: function(callback) {
+                if (typeof(callback) !== "function") {
+                    console.error("Bad callback given to connect to signal " + signalName);
+                    return;
+                }
+
+                object.__objectSignals__[signalIndex] = object.__objectSignals__[signalIndex] || [];
+                object.__objectSignals__[signalIndex].push(callback);
+
+                // only required for "pure" signals, handled separately for properties in propertyUpdate
+                if (isPropertyNotifySignal)
+                    return;
+
+                // also note that we always get notified about the destroyed signal
+                if (signalName === "destroyed" || signalName === "destroyed()" || signalName === "destroyed(QObject*)")
+                    return;
+
+                // and otherwise we only need to be connected only once
+                if (object.__objectSignals__[signalIndex].length == 1) {
+                    webChannel.exec({
+                        type: QWebChannelMessageTypes.connectToSignal,
+                        object: object.__id__,
+                        signal: signalIndex
+                    });
+                }
+            },
+            disconnect: function(callback) {
+                if (typeof(callback) !== "function") {
+                    console.error("Bad callback given to disconnect from signal " + signalName);
+                    return;
+                }
+                object.__objectSignals__[signalIndex] = object.__objectSignals__[signalIndex] || [];
+                var idx = object.__objectSignals__[signalIndex].indexOf(callback);
+                if (idx === -1) {
+                    console.error("Cannot find connection of signal " + signalName + " to " + callback.name);
+                    return;
+                }
+                object.__objectSignals__[signalIndex].splice(idx, 1);
+                if (!isPropertyNotifySignal && object.__objectSignals__[signalIndex].length === 0) {
+                    // only required for "pure" signals, handled separately for properties in propertyUpdate
+                    webChannel.exec({
+                        type: QWebChannelMessageTypes.disconnectFromSignal,
+                        object: object.__id__,
+                        signal: signalIndex
+                    });
+                }
+            }
+        };
+    }
+
+    /**
+     * Invokes all callbacks for the given signalname. Also works for property notify callbacks.
+     */
+    function invokeSignalCallbacks(signalName, signalArgs)
+    {
+        var connections = object.__objectSignals__[signalName];
+        if (connections) {
+            connections.forEach(function(callback) {
+                callback.apply(callback, signalArgs);
+            });
+        }
+    }
+
+    this.propertyUpdate = function(signals, propertyMap)
+    {
+        // update property cache
+        for (const propertyIndex of Object.keys(propertyMap)) {
+            var propertyValue = propertyMap[propertyIndex];
+            object.__propertyCache__[propertyIndex] = this.unwrapQObject(propertyValue);
+        }
+
+        for (const signalName of Object.keys(signals)) {
+            // Invoke all callbacks, as signalEmitted() does not. This ensures the
+            // property cache is updated before the callbacks are invoked.
+            invokeSignalCallbacks(signalName, signals[signalName]);
+        }
+    }
+
+    this.signalEmitted = function(signalName, signalArgs)
+    {
+        invokeSignalCallbacks(signalName, this.unwrapQObject(signalArgs));
+    }
+
+    function addMethod(methodData)
+    {
+        var methodName = methodData[0];
+        var methodIdx = methodData[1];
+
+        // Fully specified methods are invoked by id, others by name for host-side overload resolution
+        var invokedMethod = methodName[methodName.length - 1] === ')' ? methodIdx : methodName
+
+        object[methodName] = function() {
+            var args = [];
+            var callback;
+            var errCallback;
+            for (var i = 0; i < arguments.length; ++i) {
+                var argument = arguments[i];
+                if (typeof argument === "function")
+                    callback = argument;
+                else if (argument instanceof QObject && webChannel.objects[argument.__id__] !== undefined)
+                    args.push({
+                        "id": argument.__id__
+                    });
+                else
+                    args.push(argument);
+            }
+
+            var result;
+            // during test, webChannel.exec synchronously calls the callback
+            // therefore, the promise must be constucted before calling
+            // webChannel.exec to ensure the callback is set up
+            if (!callback && (typeof(Promise) === 'function')) {
+              result = new Promise(function(resolve, reject) {
+                callback = resolve;
+                errCallback = reject;
+              });
+            }
+
+            webChannel.exec({
+                "type": QWebChannelMessageTypes.invokeMethod,
+                "object": object.__id__,
+                "method": invokedMethod,
+                "args": args
+            }, function(response) {
+                if (response !== undefined) {
+                    var result = object.unwrapQObject(response);
+                    if (callback) {
+                        (callback)(result);
+                    }
+                } else if (errCallback) {
+                  (errCallback)();
+                }
+            });
+
+            return result;
+        };
+    }
+
+    function bindGetterSetter(propertyInfo)
+    {
+        var propertyIndex = propertyInfo[0];
+        var propertyName = propertyInfo[1];
+        var notifySignalData = propertyInfo[2];
+        // initialize property cache with current value
+        // NOTE: if this is an object, it is not directly unwrapped as it might
+        // reference other QObject that we do not know yet
+        object.__propertyCache__[propertyIndex] = propertyInfo[3];
+
+        if (notifySignalData) {
+            if (notifySignalData[0] === 1) {
+                // signal name is optimized away, reconstruct the actual name
+                notifySignalData[0] = propertyName + "Changed";
+            }
+            addSignal(notifySignalData, true);
+        }
+
+        Object.defineProperty(object, propertyName, {
+            configurable: true,
+            get: function () {
+                var propertyValue = object.__propertyCache__[propertyIndex];
+                if (propertyValue === undefined) {
+                    // This shouldn't happen
+                    console.warn("Undefined value in property cache for property \"" + propertyName + "\" in object " + object.__id__);
+                }
+
+                return propertyValue;
+            },
+            set: function(value) {
+                if (value === undefined) {
+                    console.warn("Property setter for " + propertyName + " called with undefined value!");
+                    return;
+                }
+                object.__propertyCache__[propertyIndex] = value;
+                var valueToSend = value;
+                if (valueToSend instanceof QObject && webChannel.objects[valueToSend.__id__] !== undefined)
+                    valueToSend = { "id": valueToSend.__id__ };
+                webChannel.exec({
+                    "type": QWebChannelMessageTypes.setProperty,
+                    "object": object.__id__,
+                    "property": propertyIndex,
+                    "value": valueToSend
+                });
+            }
+        });
+
+    }
+
+    // ----------------------------------------------------------------------
+
+    data.methods.forEach(addMethod);
+
+    data.properties.forEach(bindGetterSetter);
+
+    data.signals.forEach(function(signal) { addSignal(signal, false); });
+
+    Object.assign(object, data.enums);
+}
+
+//required for use with nodejs
+if (typeof module === 'object') {
+    module.exports = {
+        QWebChannel: QWebChannel
+    };
+}
+</script>
+
+<script src="js/state.js"></script>
+<script src="js/api.js"></script>
+<script src="js/toast.js"></script>
+<script src="js/router.js"></script>
+<script src="js/pages/settings.js"></script>
+</body>
+</html>
