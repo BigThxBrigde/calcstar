@@ -22,9 +22,15 @@ from calcstar.config import (
     validate_params,
 )
 from calcstar.data.database import connect, init_db
-from calcstar.data.repositories import create_session, save_questions
+from calcstar.data.repositories import (
+    create_session,
+    get_session_detail,
+    save_questions,
+    submit_answers,
+)
 from calcstar.domain.generator import generate_questions
-from calcstar.domain.models import PracticeConfig
+from calcstar.domain.grading import grade_answers
+from calcstar.domain.models import PracticeConfig, Question
 
 _DBPath = Union[str, Path]
 
@@ -39,6 +45,10 @@ class InvalidParamsError(ValueError):
     def __init__(self, errors: list[str]) -> None:
         self.errors = list(errors)
         super().__init__("；".join(self.errors))
+
+
+class SessionNotFoundError(ValueError):
+    """指定练习会话不存在的异常。"""
 
 
 class PracticeService:
@@ -144,3 +154,77 @@ class PracticeService:
             "range_n": range_n,
         }
         return result
+
+    def submit_practice(
+        self,
+        session_id: int,
+        answers: dict[int, Optional[int]],
+        duration_seconds: float = 0.0,
+    ) -> dict:
+        """提交一局练习的作答：复用 domain 判分并落库。
+
+        从库中取回题目重建 :class:`Question`（判分仅需 expression/
+        answer，operands/operators 以空元组占位），按题号比对后写入
+        questions/sessions 并聚合错题本。
+
+        Args:
+            session_id: 会话 id；
+            answers: {seq: 用户答案或 None(未作答)}，缺失键按未作答计；
+            duration_seconds: 本局用时秒数（超时提交照常落库）。
+
+        Returns:
+            {"score": 百分制得分, "correct_count": 答对数,
+             "total_count": 总题数, "passed": 是否全对,
+             "wrong_answers": [{"seq", "expression", "answer",
+             "user_answer"}, ...]}。
+
+        Raises:
+            SessionNotFoundError: 会话不存在。
+        """
+        detail = get_session_detail(self._conn, session_id)
+        if detail is None:
+            raise SessionNotFoundError(f"练习会话不存在：session_id={session_id}")
+
+        questions = [
+            Question(
+                expression=row["expression"],
+                answer=int(row["answer"]),
+                operands=(),
+                operators=(),
+            )
+            for row in detail["questions"]
+        ]
+        normalized = {int(seq): answer for seq, answer in (answers or {}).items()}
+
+        graded_result = grade_answers(questions, normalized)
+        graded = [
+            {
+                "seq": record.seq,
+                "expression": record.expression,
+                "answer": record.answer,
+                "user_answer": record.user_answer,
+                "is_correct": record.is_correct,
+            }
+            for record in graded_result.results
+        ]
+        submit_answers(self._conn, session_id, normalized, graded, duration_seconds)
+
+        return {
+            "score": graded_result.score,
+            "correct_count": graded_result.correct_count,
+            "total_count": graded_result.total_count,
+            "passed": (
+                graded_result.total_count > 0
+                and graded_result.correct_count == graded_result.total_count
+            ),
+            "wrong_answers": [
+                {
+                    "seq": record.seq,
+                    "expression": record.expression,
+                    "answer": record.answer,
+                    "user_answer": record.user_answer,
+                }
+                for record in graded_result.results
+                if not record.is_correct
+            ],
+        }
