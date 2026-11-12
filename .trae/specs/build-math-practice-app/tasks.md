@@ -13,18 +13,18 @@
   - [x] SubTask 1.5: 验证 venv 内 `calcstar` 命令与 `python -m calcstar` 均能启动空窗口
   - [x] SubTask 1.6: 编写 `CalcStar.spec` 与 `build.ps1`（PyInstaller `--onefile --windowed`，使用 venv 解释器运行 PyInstaller，内置 web 资源与 QtWebEngine 运行时），产出 `dist\CalcStar.exe`
 
-- [ ] Task 2: 领域层——出题引擎 `domain/`
-  - [ ] SubTask 2.1: `domain/models.py`：Question、PracticeConfig 等数据类（表达式文本、正确答案、运算符序列、练习参数）
-  - [ ] SubTask 2.2: `domain/generator.py`：加法／减法／加减法／乘法／除法／乘除法生成器，遵守数值范围、整除、非负约束
-  - [ ] SubTask 2.3: `domain/generator.py`：四则混合运算生成器（2–3 个运算符、运算优先级、可选括号、整除步骤、中间结果约束）
-  - [ ] SubTask 2.4: 批量生成与去重（同批不重复，空间不足时放宽组合）
-  - [ ] SubTask 2.5: 编写 `tests/domain/test_generator.py`，覆盖各类别约束、整除性、去重、参数边界
+- [x] Task 2: 领域层——出题引擎 `domain/`
+  - [x] SubTask 2.1: `domain/models.py`：Question、PracticeConfig 等数据类（表达式文本、正确答案、运算符序列、练习参数）
+  - [x] SubTask 2.2: `domain/generator.py`：加法／减法／加减法／乘法／除法／乘除法生成器，遵守数值范围、整除、非负约束
+  - [x] SubTask 2.3: `domain/generator.py`：四则混合运算生成器（2–3 个运算符、运算优先级、可选括号、整除步骤、中间结果约束）
+  - [x] SubTask 2.4: 批量生成与去重（同批不重复，空间不足时放宽组合）
+  - [x] SubTask 2.5: 编写 `tests/domain/test_generator.py`，覆盖各类别约束、整除性、去重、参数边界
 
-- [ ] Task 3: 数据层 `data/`
-  - [ ] SubTask 3.1: `data/database.py`：SQLite 连接管理与建表 `sessions`（参数、时间、得分、用时、订正轮次、状态、是否通过）
-  - [ ] SubTask 3.2: 建表 `questions`（所属练习、序号、表达式、正确答案、用户答案、是否正确、订正次数）与 `wrong_book`（表达式+答案聚合的错题集，错误次数、最近时间、类别、范围）
-  - [ ] SubTask 3.3: `data/repositories.py`：会话创建、提交判分落库、订正更新、错题集聚合与查询、历史列表与明细查询
-  - [ ] SubTask 3.4: 编写 `tests/data/test_repositories.py`，覆盖建表、判分写入、错题聚合与重复错误累计
+- [x] Task 3: 数据层 `data/`
+  - [x] SubTask 3.1: `data/database.py`：SQLite 连接管理与建表 `sessions`（参数、时间、得分、用时、订正轮次、状态、是否通过）
+  - [x] SubTask 3.2: 建表 `questions`（所属练习、序号、表达式、正确答案、用户答案、是否正确、订正次数）与 `wrong_book`（表达式+答案聚合的错题集，错误次数、最近时间、类别、范围）
+  - [x] SubTask 3.3: `data/repositories.py`：会话创建、提交判分落库、订正更新、错题集聚合与查询、历史列表与明细查询
+  - [x] SubTask 3.4: 编写 `tests/data/test_repositories.py`，覆盖建表、判分写入、错题聚合与重复错误累计
 
 - [ ] Task 4: 服务层与桥接层
   - [ ] SubTask 4.1: `services/practice_service.py` 创建练习：校验参数 → 生成题目 → 写入会话 → 返回题目（含分页元数据）与限时信息
