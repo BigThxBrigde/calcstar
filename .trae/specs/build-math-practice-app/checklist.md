@@ -1,23 +1,26 @@
 # Checklist
 
+## 工程与构建
+- [ ] 存在 `pyproject.toml`（PEP 621，setuptools src 布局），声明 PyQt6/PyQt6-WebEngine 依赖与 dev 依赖组
+- [ ] `[project.scripts]` 提供 `calcstar` 命令；`pip install -e .[dev]` 后 `calcstar` 与 `python -m calcstar` 均可启动
+- [ ] pytest 与覆盖率配置写在 pyproject.toml，无散落的 pytest.ini
+- [ ] 包分层为 `src/calcstar/{config,domain,data,services,bridge,desktop}`，层间单向依赖
+
 ## 启动与套壳
-- [ ] `python main.py` 能打开原生窗口并加载本地前端资源，窗口初始尺寸约 1024×720
+- [ ] `calcstar` / `python -m calcstar` 能打开原生窗口并加载本地前端资源，窗口初始尺寸约 1024×720
 - [ ] 运行期不启动 HTTP 服务、不监听任何端口，无需浏览器参与
+- [ ] 使用 QtWebEngine（自带 Chromium），目标机器无需安装 WebView2 或任何浏览器即可渲染
 - [ ] 关闭窗口后进程完全退出，无残留后台进程
 - [ ] 首次运行自动在用户数据目录创建 SQLite 数据库与表结构
-- [ ] 缺少 WebView2 运行时时有明确弹窗提示并正常退出，不静默崩溃
 
 ## 独立可执行文件
 - [ ] `build.ps1` 可一键打包，产出单文件 `dist\CalcStar.exe`
 - [ ] 双击 exe 直接打开桌面窗口，无控制台窗口、无浏览器标签页
-- [ ] exe 内置前端资源，运行时不请求任何外网资源
+- [ ] exe 内置前端资源与 QtWebEngine 运行时，运行时不请求任何外网资源
 - [ ] 将 exe 复制到其他目录/机器后可直接运行并创建本地数据库
 
-## 仓库与工程化
-- [ ] 已执行 `git init`，`.gitignore` 正确忽略 `__pycache__`、`.venv`、`build/`、`dist/`、`*.db` 等
-- [ ] 存在 `pytest.ini` 与 `tests/conftest.py`（临时数据库 fixture）
-- [ ] `pytest --cov=app --cov-fail-under=85` 全部通过且覆盖率达标
-- [ ] 测试覆盖各类别约束、参数边界、判分、订正闭环、错题聚合、历史查询、超时提交与桥接错误封装
+## 仓库
+- [ ] 已执行 `git init`，`.gitignore` 正确忽略 `__pycache__`、`.venv`、`build/`、`dist/`、`*.db`、`*.egg-info` 等
 
 ## 设置页面
 - [ ] 运算类别包含 加法/减法/加减法/乘法/除法/乘除法/四则混合运算
@@ -34,7 +37,7 @@
 - [ ] 乘除法乘积不超过范围，除法均整除且除数不为 0
 - [ ] 四则混合运算遵循先乘除后加减，除法步骤整除，中间结果不越界
 - [ ] 同一份练习中题目不重复
-- [ ] 生成器单元测试 `pytest tests/test_generator.py` 全部通过
+- [ ] 生成器单元测试 `pytest tests/domain/test_generator.py` 全部通过
 
 ## 做题页面
 - [ ] 题目以行列网格展示，题目超出每页数量时出现分页控件
@@ -70,3 +73,5 @@
 
 ## 数据
 - [ ] 重启应用后历史成绩与错题集数据仍然存在
+- [ ] `pytest --cov=calcstar --cov-fail-under=85` 全部通过且覆盖率达标
+- [ ] 测试覆盖各类别约束、参数边界、判分、订正闭环、错题聚合、历史查询、超时提交与桥接错误封装

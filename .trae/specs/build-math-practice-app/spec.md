@@ -4,7 +4,8 @@
 为小学生提供一个可离线运行、界面现代化的口算练习工具：自动出题、限时答题、即时判分、错题订正直到全对，并把每次成绩与错题沉淀到本地数据库，方便家长/老师跟踪学习效果。
 
 ## What Changes
-- 新增基于 Python 的纯桌面应用（pywebview 直接加载本地前端资源，通过 JS–Python 桥接调用后端，不启动任何 HTTP 服务、不经浏览器）。
+- 新增基于 Python 的纯桌面应用（PyQt6 + QtWebEngine 直接加载本地前端资源，内置 Chromium 内核，通过 QWebChannel 桥接调用后端，不启动任何 HTTP 服务、不经浏览器、无需安装 WebView2 或任何外部运行时）。
+- 项目采用 **pyproject.toml**（PEP 621）管理元数据、依赖与工具配置，src 布局，提供 `calcstar` 控制台入口与 `python -m calcstar` 运行方式。
 - 新增 PyInstaller 打包流程，产出**单文件 `CalcStar.exe`，双击即运行，无控制台窗口、无需安装 Python、无需浏览器**。
 - 新增"设置 → 做题 → 判分订正 → 返回设置"的完整闭环流程。
 - 新增题库随机生成引擎（加／减／加减／乘／除／乘除／四则混合，可控数值范围、题量、是否含括号）。
@@ -14,14 +15,21 @@
 
 ## Impact
 - 影响能力：出题引擎、练习会话管理、判分与订正、成绩历史、错题本、桌面启动器与打包发布。
-- 影响代码（新建）：`app/` 下 Python 后端（生成器、数据层、服务层、JS 桥接接口）、`web/` 下前端静态资源、`main.py` 桌面入口、`build.ps1` + `CalcStar.spec` 打包脚本，`tests/` 下生成器与数据层测试。
+- 影响代码（新建）：`src/calcstar/` 下分层 Python 包（见技术方案）、`web/` 下前端静态资源、`pyproject.toml` 项目配置、`build.ps1` + `CalcStar.spec` 打包脚本，`tests/` 下各层测试。
 
 ## 技术方案（约定）
-- Python 3.13 + pywebview（Windows 使用系统自带 WebView2 / EdgeChromium 内核）作为桌面外壳；前端资源由 pywebview 以本地文件方式加载。
-- 前后端通信使用 pywebview 的 `js_api` 桥：前端调用 `window.pywebview.api.<method>(payload)`，后端返回 JSON 兼容对象。**不开放任何端口、不使用 HTTP、不支持浏览器访问**。
-- 后端分层：`generator.py`（出题）、`db.py`（SQLite）、`services.py`（业务编排，纯函数式、可单测）、`api.py`（暴露给前端的薄封装）。
+- Python 3.13 + **PyQt6-WebEngine**（`QWebEngineView` + `QWebChannel`）作为桌面外壳。选择理由：QtWebEngine 自带完整 Chromium，目标机器**无需预装 WebView2 运行时、无需浏览器**，离线自包含，满足"零外部依赖"要求。前端资源随包内置于 `web/`，窗口直接加载本地文件。
+- 前后端通信使用 `QWebChannel`：Python 侧注册桥接对象，前端加载内联的 `qwebchannel.js` 后调用 `bridge.<method>(payload, callback)`，后端返回 JSON 兼容对象。**不开放任何端口、不使用 HTTP、不支持浏览器访问**。
+- 包名与分层（src 布局，层间单向依赖 `desktop → bridge → services → domain/data`，domain 与 data 不互相依赖、均不依赖 UI）：
+  - `src/calcstar/config.py` — 路径解析（用户数据目录、数据库路径、资源目录）、参数枚举与默认值
+  - `src/calcstar/domain/` — 领域层（纯逻辑、零 IO）：`models.py`（Question、PracticeConfig 等数据类）、`generator.py`（出题引擎）、`grading.py`（判分）
+  - `src/calcstar/data/` — 数据层：`database.py`（SQLite 连接与建表）、`repositories.py`（会话/题目/错题仓储查询）
+  - `src/calcstar/services/` — 应用服务层（业务编排）：`practice_service.py`（创建/提交/订正）、`stats_service.py`（历史/错题集）
+  - `src/calcstar/bridge/` — 桥接层：`api.py`（暴露给前端的方法集，统一包装 `{"ok": bool, "data"/"error": ...}`）
+  - `src/calcstar/desktop/` — 桌面壳：`window.py`（QWebEngineView 窗口、QWebChannel 注册、应用入口）
 - 前端为无构建步骤的原生 HTML/CSS/JS，界面使用现代卡片式布局、柔和渐变、圆角、轻量动效，响应式适配 1024×640 及以上窗口。
-- 打包：PyInstaller `--onefile --windowed`，前端资源与图标内置；产物为单个 `dist/CalcStar.exe`。目标机器需 Windows 10/11（自带 WebView2 运行时）；若检测到缺少 WebView2，启动时弹窗提示并可引导下载，程序不崩溃。
+- 构建：`pyproject.toml`（setuptools 后端）声明依赖（`PyQt6`、`PyQt6-WebEngine`）、开发依赖（pytest、pytest-cov、pyinstaller）与 `[project.scripts]` 入口；pytest/覆盖率配置同样写入 pyproject.toml。
+- 打包：PyInstaller `--onefile --windowed`，前端资源与图标内置；产物为单个 `dist/CalcStar.exe`。QtWebEngine 运行时随包打包，目标机器无需安装任何额外组件。
 - 数据存放于用户数据目录（Windows：`%APPDATA%\CalcStar\calcstar.db`），也可通过环境变量 `CALCSTAR_DB` 覆盖；exe 无安装、可整体复制迁移。
 
 ## ADDED Requirements
@@ -113,17 +121,17 @@
 - **THEN** 以选中错题生成一份新的练习（题量与限时沿用默认设置），完成后按上述闭环判分
 
 ### Requirement: 桌面套壳与本地数据
-系统 SHALL 以纯本地桌面应用形式运行，不依赖浏览器、不开放网络端口，数据仅保存在本地。
+系统 SHALL 以纯本地桌面应用形式运行，不依赖浏览器、不依赖 WebView2 等外部运行时、不开放网络端口，数据仅保存在本地。
 
 #### Scenario: 桌面启动
-- **WHEN** 用户双击 `CalcStar.exe`（或开发态运行 `python main.py`）
+- **WHEN** 用户双击 `CalcStar.exe`（或开发态运行 `calcstar` / `python -m calcstar`）
 - **THEN** 直接打开 1024×720 起步的原生窗口加载应用界面，无控制台窗口、无浏览器标签页、无本地端口监听，首次运行自动建库建表
 - **WHEN** 用户关闭窗口
 - **THEN** 进程完全退出，无残留后台进程
 
-#### Scenario: 缺少 WebView2 运行时
-- **WHEN** 目标机器未安装 WebView2 运行时
-- **THEN** 启动时弹出明确提示（说明原因与下载方式），程序以可读方式退出而不是静默崩溃
+#### Scenario: 零外部运行时依赖
+- **WHEN** 在全新 Win10/11 机器（未安装 WebView2、未装任何浏览器）上运行
+- **THEN** 应用正常启动并渲染界面——Chromium 内核随程序自带，不提示任何"缺少组件"或引导外部下载
 
 #### Scenario: 数据持久化
 - **WHEN** 应用重启
@@ -134,7 +142,7 @@
 
 #### Scenario: 打包产物
 - **WHEN** 执行 `.\build.ps1`
-- **THEN** 生成 `dist\CalcStar.exe` 单文件（内置前端资源与 Python 运行时），双击即可运行，无需安装 Python 或任何第三方库
+- **THEN** 生成 `dist\CalcStar.exe` 单文件（内置前端资源、Python 运行时与 QtWebEngine/Chromium 内核），双击即可运行，无需安装 Python 或任何第三方库
 - **WHEN** 用户把该 exe 拷贝到另一台 Win10/11 机器
 - **THEN** 双击可正常运行并新建自己的本地数据库
 
@@ -165,15 +173,21 @@
 - **THEN** 使用页内 Toast/横幅与元素高亮反馈，不用阻塞式弹窗；所有可交互元素有清晰 `:focus-visible` 焦点环，文字与背景对比度符合可读性要求
 
 ### Requirement: 工程化与自动化测试
-系统 SHALL 以 Git 仓库管理源码，并以 pytest 覆盖后端核心逻辑。
+系统 SHALL 以 pyproject.toml 管理构建配置、以 Git 仓库管理源码，并以 pytest 覆盖后端核心逻辑。
+
+#### Scenario: pyproject 构建
+- **WHEN** 检查仓库根目录
+- **THEN** 存在 `pyproject.toml`（PEP 621）：含项目元数据、运行依赖 `PyQt6`/`PyQt6-WebEngine`、可选开发依赖组 `dev`（pytest、pytest-cov、pyinstaller）、`[project.scripts]` 提供 `calcstar` 命令、pytest 与覆盖率配置；pytest/覆盖率配置不再散落在 ini 文件
+- **WHEN** 开发者安装项目
+- **THEN** `pip install -e .[dev]` 后可直接运行 `calcstar` 启动应用、`pytest` 运行测试
 
 #### Scenario: 仓库初始化
 - **WHEN** 项目开始开发
-- **THEN** 先执行 `git init`，提供适配 Python/PyInstaller 的 `.gitignore`（忽略 `__pycache__`、`.venv`、`build/`、`dist/`、`*.spec` 产物缓存、本地数据库文件等），并完成首次提交
+- **THEN** 已执行 `git init`，提供适配 src 布局/PyInstaller 的 `.gitignore`（忽略 `__pycache__`、`.venv`、`build/`、`dist/`、`*.egg-info`、覆盖率产物、本地数据库文件等），并完成首次提交
 
 #### Scenario: 测试覆盖
 - **WHEN** 运行 `pytest`
-- **THEN** 全部用例通过，且 `app/` 目录语句覆盖率不低于 85%
+- **THEN** 全部用例通过，且 `src/calcstar/` 包语句覆盖率不低于 85%
 - **WHEN** 检查测试内容
 - **THEN** 至少覆盖：各运算类别的范围/非负/整除/括号与优先级约束、批量去重与可生成空间不足的降级、参数校验边界（0、负数、超上限）、落库与持久化、判分与未作答处理、订正多轮至全对的状态流转、错题集聚合与重复错误累计、历史分页与明细、超时自动提交、桥接层统一错误返回
 
