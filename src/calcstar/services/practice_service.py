@@ -25,8 +25,11 @@ from calcstar.data.database import connect, init_db
 from calcstar.data.repositories import (
     create_session,
     get_session_detail,
+    increment_correction_round,
+    mark_session_passed,
     save_questions,
     submit_answers,
+    update_correction,
 )
 from calcstar.domain.generator import generate_questions
 from calcstar.domain.grading import grade_answers
@@ -227,4 +230,78 @@ class PracticeService:
                 for record in graded_result.results
                 if not record.is_correct
             ],
+        }
+
+    def submit_correction(
+        self, session_id: int, corrections: dict[int, int]
+    ) -> dict:
+        """提交一轮订正：逐题判分落库并驱动订正轮次与达标状态。
+
+        轮次计数规则（与 repositories.mark_session_passed 的语义协调，
+        避免轮次重复 +1）：
+
+        - 本轮存在答错的题：仅逐题落库（update_correction 内部对答错
+          题累计 correction_count 并累加错题本），不计轮次、不做达标
+          判定；
+        - 本轮全部答对且整局仍有错题：correction_round +1
+          （increment_correction_round）；
+        - 本轮处理后整局全部题目 is_correct=1：mark_session_passed
+          （其内部已含 correction_round +1 与 status='passed'，故本轮
+          不再另行 +1，该 +1 即最后一轮的轮次计数）。
+
+        Args:
+            session_id: 会话 id；
+            corrections: {seq: 订正答案}；未知题号跳过（与 data 层
+                容错语义一致）。
+
+        Returns:
+            {"all_correct": 整局是否已全部答对, "passed": 会话是否达标,
+             "wrong_answers": 仍错的题列表（含 seq/expression/answer/
+             user_answer）, "correction_round": 当前订正轮数}。
+
+        Raises:
+            SessionNotFoundError: 会话不存在。
+        """
+        detail = get_session_detail(self._conn, session_id)
+        if detail is None:
+            raise SessionNotFoundError(f"练习会话不存在：session_id={session_id}")
+
+        questions_by_seq = {row["seq"]: row for row in detail["questions"]}
+        any_wrong_this_round = False
+        for raw_seq, user_answer in (corrections or {}).items():
+            seq = int(raw_seq)
+            row = questions_by_seq.get(seq)
+            if row is None:
+                continue
+            is_correct = user_answer == int(row["answer"])
+            update_correction(self._conn, session_id, seq, user_answer, is_correct)
+            if not is_correct:
+                any_wrong_this_round = True
+
+        if corrections:
+            latest = get_session_detail(self._conn, session_id)
+            all_correct_now = bool(latest["questions"]) and all(
+                row["is_correct"] == 1 for row in latest["questions"]
+            )
+            if all_correct_now:
+                mark_session_passed(self._conn, session_id)
+            elif not any_wrong_this_round:
+                increment_correction_round(self._conn, session_id)
+
+        detail = get_session_detail(self._conn, session_id)
+        wrong_answers = [
+            {
+                "seq": row["seq"],
+                "expression": row["expression"],
+                "answer": row["answer"],
+                "user_answer": row["user_answer"],
+            }
+            for row in detail["questions"]
+            if row["is_correct"] != 1
+        ]
+        return {
+            "all_correct": not wrong_answers and bool(detail["questions"]),
+            "passed": bool(detail["passed"]),
+            "wrong_answers": wrong_answers,
+            "correction_round": detail["correction_round"],
         }
