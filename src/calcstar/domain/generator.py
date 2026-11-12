@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import random
 
-from calcstar.config import OperationCategory
+from calcstar.config import OPERAND_COUNT_RANDOM, OperationCategory
 from calcstar.domain.models import PracticeConfig, Question
 
 #: 加法显示符号
@@ -170,6 +170,183 @@ def _generate_mul_div(rng: random.Random, config: PracticeConfig, level: int) ->
     return _generate_div(rng, config, level)
 
 
+# ---- 三目链式算式（operand_count=3）：三个操作数、两个运算符 ----
+
+
+def _generate_add3(rng: random.Random, config: PracticeConfig, level: int) -> Question | None:
+    """生成三目加法链 ``a + b + c``：各部分和与结果均落在 ``[0, N]``。
+
+    level 0 要求各操作数至少为 1（避免 ``+0``）；level 1 放开。
+    """
+    n = config.range_n
+    if level == 0:
+        if n < 3:
+            return None
+        a = rng.randint(1, n - 2)
+        b = rng.randint(1, n - a - 1)
+        c = rng.randint(1, n - a - b)
+    else:
+        a = rng.randint(0, n)
+        b = rng.randint(0, n - a)
+        c = rng.randint(0, n - a - b)
+    return _make_question((a, b, c), (_OP_ADD, _OP_ADD), a + b + c)
+
+
+def _generate_sub3(rng: random.Random, config: PracticeConfig, level: int) -> Question | None:
+    """生成三目减法链 ``a - b - c``。
+
+    非负模式要求中间与最终结果均落在 ``[0, N]``（level 0 额外避免
+    ``-0`` 与 ``a-a``）；``allow_negative=True`` 时结果与中间值可为
+    负但绝对值不超过 ``N``。
+    """
+    n = config.range_n
+    if config.allow_negative:
+        for _ in range(_MAX_ATTEMPTS):
+            a = rng.randint(0, n)
+            b = rng.randint(0, n)
+            c = rng.randint(0, n)
+            first = a - b
+            result = first - c
+            if not (-n <= first <= n and -n <= result <= n):
+                continue
+            if level == 0 and (b == 0 or c == 0 or a == b):
+                continue
+            return _make_question((a, b, c), (_OP_SUB, _OP_SUB), result)
+        return None
+    if level == 0:
+        if n < 2:
+            return None
+        result = rng.randint(0, n - 2)
+        c = rng.randint(1, n - 1 - result)
+        b = rng.randint(1, n - result - c)
+        a = b + c + result
+    else:
+        result = rng.randint(0, n)
+        c = rng.randint(0, n - result)
+        b = rng.randint(0, n - result - c)
+        a = b + c + result
+    return _make_question((a, b, c), (_OP_SUB, _OP_SUB), a - b - c)
+
+
+def _generate_mul3(rng: random.Random, config: PracticeConfig, level: int) -> Question | None:
+    """生成三目乘法链 ``a × b × c``：积不超过 ``N``。
+
+    level 0 额外避免 0 因子；level 1 放开该限制。
+    """
+    n = config.range_n
+    if level == 0:
+        a = rng.randint(1, n)
+        b = rng.randint(1, n // a)
+        c = rng.randint(1, n // (a * b))
+    else:
+        a = rng.randint(0, n)
+        if a == 0:
+            b = rng.randint(0, n)
+            c = rng.randint(0, n)
+        else:
+            b = rng.randint(0, n // a)
+            c = rng.randint(0, n // (a * b)) if b else rng.randint(0, n)
+    return _make_question((a, b, c), (_OP_MUL, _OP_MUL), a * b * c)
+
+
+def _generate_div3(rng: random.Random, config: PracticeConfig, level: int) -> Question | None:
+    """生成三目除法链 ``a ÷ b ÷ c``：从商出发构造保证整除。
+
+    level 0 要求除数至少为 2、商至少为 1；level 1 放开除数为 1。
+    被除数 = 商 × b × c，不超过 ``N``。
+    """
+    n = config.range_n
+    if level == 0:
+        if n < 4:
+            return None
+        for _ in range(_MAX_ATTEMPTS):
+            quotient = rng.randint(1, n // 4)
+            b = rng.randint(2, n // quotient)
+            hi = n // (quotient * b)
+            if hi >= 2:
+                c = rng.randint(2, hi)
+                return _make_question(
+                    (quotient * b * c, b, c), (_OP_DIV, _OP_DIV), quotient
+                )
+        return None
+    quotient = rng.randint(1, n)
+    b = rng.randint(1, n // quotient)
+    c = rng.randint(1, n // (quotient * b))
+    return _make_question((quotient * b * c, b, c), (_OP_DIV, _OP_DIV), quotient)
+
+
+def _generate_chain3(
+    rng: random.Random, config: PracticeConfig, level: int, pool: tuple[str, str]
+) -> Question | None:
+    """生成三目双运算符链式算式（同级运算从左到右依次求值）。
+
+    两个运算符均从 ``pool``（``{+,-}`` 或 ``{×,÷}``）随机取得。
+    操作数逐项采样：乘法按剩余空间收缩上界、除法从当前值的因子
+    中选取以保证整除；每个中间结果与最终结果均落在有效范围内。
+    不满足约束即拒绝重试，重试耗尽返回 ``None``。
+    """
+    n = config.range_n
+    for _ in range(_MIXED_ATTEMPTS):
+        operators = (rng.choice(pool), rng.choice(pool))
+        cur = rng.randint(1 if level == 0 else 0, n)
+        operands: list[int] = [cur]
+        ok = True
+        for operator in operators:
+            if operator == _OP_DIV:
+                magnitude = abs(cur)
+                low = 2 if level == 0 else 1
+                if magnitude == 0:
+                    if level == 0:
+                        ok = False
+                        break
+                    operand = rng.randint(1, n)
+                else:
+                    divisors = [
+                        d for d in range(low, min(magnitude, n) + 1) if magnitude % d == 0
+                    ]
+                    if not divisors:
+                        ok = False
+                        break
+                    operand = rng.choice(divisors)
+                cur = cur // operand
+            elif operator == _OP_MUL:
+                magnitude = abs(cur)
+                if magnitude == 0:
+                    operand = rng.randint(0, n)
+                else:
+                    hi = n // magnitude
+                    low = 1 if level == 0 else 0
+                    if hi < low:
+                        ok = False
+                        break
+                    operand = rng.randint(low, hi)
+                cur = cur * operand
+            else:
+                operand = rng.randint(1 if level == 0 else 0, n)
+                cur = cur + operand if operator == _OP_ADD else cur - operand
+                if not config.allow_negative and level == 0 and cur < 1:
+                    ok = False
+                    break
+            if not _in_bounds(cur, n, config.allow_negative):
+                ok = False
+                break
+            operands.append(operand)
+        if not ok:
+            continue
+        return _make_question(tuple(operands), operators, cur)
+    return None
+
+
+def _generate_add_sub3(rng: random.Random, config: PracticeConfig, level: int) -> Question | None:
+    """生成三目加减混合链：两个运算符各自从 ``{+,-}`` 随机。"""
+    return _generate_chain3(rng, config, level, _LOW_PRECEDENCE)
+
+
+def _generate_mul_div3(rng: random.Random, config: PracticeConfig, level: int) -> Question | None:
+    """生成三目乘除混合链：两个运算符各自从 ``{×,÷}`` 随机。"""
+    return _generate_chain3(rng, config, level, _HIGH_PRECEDENCE)
+
+
 # ---- 混合运算（mixed）：随机构造 + 重试采样 + 小型求值器校验 ----
 
 
@@ -297,7 +474,8 @@ def _evaluate_tokens(tokens: list[int | str]) -> tuple[int, list[int]]:
 def _generate_mixed(rng: random.Random, config: PracticeConfig, level: int) -> Question | None:
     """生成一道四则混合运算题。
 
-    表达式含 2–3 个运算符（随机），严格遵循先乘除后加减；每个
+    表达式默认含 2–3 个运算符（随机），``config.operand_count == 3``
+    时固定为 2 个（三个操作数）；严格遵循先乘除后加减；每个
     除法步骤整除；所有中间结果与最终结果均落在有效范围内
     （``allow_negative=True`` 时允许为负且绝对值不超过 ``N``）。
     ``include_parentheses=True`` 时约半数题目含一层括号。
@@ -305,7 +483,10 @@ def _generate_mixed(rng: random.Random, config: PracticeConfig, level: int) -> Q
     """
     n = config.range_n
     for _ in range(_MIXED_ATTEMPTS):
-        operator_count = rng.choice((2, 3))
+        if config.operand_count == 3:
+            operator_count = 2
+        else:
+            operator_count = rng.choice((2, 3))
         paren_pos = None
         if config.include_parentheses and rng.random() < 0.5:
             paren_pos = rng.randrange(operator_count)
@@ -328,6 +509,7 @@ def _generate_mixed(rng: random.Random, config: PracticeConfig, level: int) -> Q
             answer=value,
             operands=tuple(operands),
             operators=tuple(operators),
+            paren_pos=paren_pos,
         )
     return None
 
@@ -342,6 +524,64 @@ _CATEGORY_GENERATORS = {
     OperationCategory.MUL_DIV: _generate_mul_div,
     OperationCategory.MIXED: _generate_mixed,
 }
+
+#: 类别 -> 三目（三个操作数）单题生成函数
+_CATEGORY_GENERATORS3 = {
+    OperationCategory.ADD: _generate_add3,
+    OperationCategory.SUB: _generate_sub3,
+    OperationCategory.ADD_SUB: _generate_add_sub3,
+    OperationCategory.MUL: _generate_mul3,
+    OperationCategory.DIV: _generate_div3,
+    OperationCategory.MUL_DIV: _generate_mul_div3,
+    OperationCategory.MIXED: _generate_mixed,
+}
+
+
+# ---- 填空位置：固定末尾（求结果）或位置不定 ----
+
+#: 表达式中被隐藏位置的空白记号
+_BLANK_TOKEN = "( )"
+
+
+def _blank_question(question: Question, rng: random.Random, mode: str) -> Question:
+    """按填空位置模式处理题目。
+
+    ``mode == "last"`` 固定求等号右侧结果，原样返回；
+    ``mode == "any"`` 时每题随机：约半数求结果（原样），否则随机
+    隐藏一个操作数——表达式以空白记号 ``( )`` 占位，等号后给出
+    原结果，答案变为被隐藏操作数的值。混合运算中被隐藏操作数
+    与括号组相邻时回退为求结果，避免括号包住空白。
+    """
+    if mode != "any" or not question.operands:
+        return question
+    if rng.random() < 0.5:
+        return question
+    idx = rng.randrange(len(question.operands))
+    if question.paren_pos is not None and idx in (
+        question.paren_pos,
+        question.paren_pos + 1,
+    ):
+        return question
+    operands = list(question.operands)
+    answer = operands[idx]
+    operands[idx] = _BLANK_TOKEN
+    if question.paren_pos is None:
+        parts = [str(operands[0])]
+        for operator, operand in zip(question.operators, operands[1:]):
+            parts.append(operator)
+            parts.append(str(operand))
+        expression = " ".join(parts) + " = " + str(question.answer)
+    else:
+        tokens = _build_tokens(operands, list(question.operators), question.paren_pos)
+        expression = _format_tokens(tokens) + " " + str(question.answer)
+    return Question(
+        expression=expression,
+        answer=answer,
+        operands=question.operands,
+        operators=question.operators,
+        blank_index=idx,
+        paren_pos=question.paren_pos,
+    )
 
 
 # ---- 穷举兜底：候选空间耗尽时枚举全部合法组合 ----
@@ -398,12 +638,18 @@ def _enumerate_all(config: PracticeConfig, rng: random.Random) -> list[Question]
     """穷举当前约束（级别 1）下全部合法表达式，作为兜底候选。
 
     仅对操作数固定的简单类别实施；混合运算候选空间为指数级，
-    放宽采样已能覆盖小范围空间，直接返回空列表。数值范围过大
-    导致候选格数超出 :data:`_MAX_ENUM_CELLS` 时同样跳过穷举
-    （此时采样必然充足）。返回前随机洗牌，保证补题分布均匀。
+    放宽采样已能覆盖小范围空间，直接返回空列表。三目模式
+    （``operand_count`` 为 3 或随机）下穷举仅覆盖两目组合，同样
+    返回空列表。数值范围过大导致候选格数超出
+    :data:`_MAX_ENUM_CELLS` 时同样跳过穷举（此时采样必然充足）。
+    返回前随机洗牌，保证补题分布均匀。
     """
     category = config.category
-    if category is OperationCategory.MIXED or (config.range_n + 1) ** 2 > _MAX_ENUM_CELLS:
+    if (
+        category is OperationCategory.MIXED
+        or config.operand_count in (3, OPERAND_COUNT_RANDOM)
+        or (config.range_n + 1) ** 2 > _MAX_ENUM_CELLS
+    ):
         return []
     if category is OperationCategory.ADD:
         candidates = _enumerate_add(config)
@@ -430,11 +676,28 @@ def generate_questions(config: PracticeConfig) -> list[Question]:
     仍不足时穷举全部合法组合去重补齐。可用组合总数少于请求数
     量时返回全部可用组合。各级均设尝试次数与停滞上限，不会
     死循环。
+
+    ``config.operand_count`` 控制算式目数：0（默认两个数，混合
+    保持原随机 2–3 个运算符）、3（三目链式）、-1（每题随机两目
+    或三目）。``config.blank_position == "any"`` 时每题随机填空
+    位置（求结果或隐藏任一操作数），判重以最终显示文本为准。
     """
     rng = random.Random(config.seed)
     questions: list[Question] = []
     seen: set[str] = set()
-    generator = _CATEGORY_GENERATORS[config.category]
+    generator2 = _CATEGORY_GENERATORS[config.category]
+    generator3 = _CATEGORY_GENERATORS3[config.category]
+    if config.operand_count == 3:
+        generator = generator3
+    elif config.operand_count == OPERAND_COUNT_RANDOM:
+
+        def generator(rng: random.Random, cfg: PracticeConfig, level: int) -> Question | None:
+            if rng.random() < 0.5:
+                return generator2(rng, cfg, level)
+            return generator3(rng, cfg, level)
+
+    else:
+        generator = generator2
     max_attempts = _BATCH_ATTEMPTS_BASE + _BATCH_ATTEMPTS_PER_QUESTION * config.count
     for level in (0, 1):
         stall = 0
@@ -442,7 +705,13 @@ def generate_questions(config: PracticeConfig) -> list[Question]:
         while len(questions) < config.count and attempts < max_attempts:
             attempts += 1
             question = generator(rng, config, level)
-            if question is None or question.expression in seen:
+            if question is None:
+                stall += 1
+                if stall >= _LEVEL_STALL_LIMIT:
+                    break
+                continue
+            question = _blank_question(question, rng, config.blank_position)
+            if question.expression in seen:
                 stall += 1
                 if stall >= _LEVEL_STALL_LIMIT:
                     break
@@ -455,6 +724,7 @@ def generate_questions(config: PracticeConfig) -> list[Question]:
     for question in _enumerate_all(config, rng):
         if len(questions) >= config.count:
             break
+        question = _blank_question(question, rng, config.blank_position)
         if question.expression in seen:
             continue
         seen.add(question.expression)

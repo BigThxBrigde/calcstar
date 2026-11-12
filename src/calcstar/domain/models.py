@@ -17,16 +17,23 @@ class Question:
 
     属性:
         expression: 题目显示文本，如 ``"3 + 5 ="``；运算符使用
-            显示符号 ``+``、``-``、``×``、``÷``。
-        answer: 正确答案（整数）。
+            显示符号 ``+``、``-``、``×``、``÷``。填空题中被隐藏的
+            位置以空白记号 ``( )`` 表示，如 ``"3 + ( ) - 2 = 5"``。
+        answer: 正确答案（整数）；填空求操作数时即为该操作数的值。
         operands: 按表达式中出现顺序排列的操作数元组。
         operators: 按表达式中出现顺序排列的运算符元组（显示符号）。
+        blank_index: 填空位置；None 表示求结果（空白在等号右侧），
+            否则为被隐藏操作数在 ``operands`` 中的下标。
+        paren_pos: 混合运算括号组对应的运算符下标（``_build_tokens``
+            的 ``paren_pos`` 参数）；无括号时为 None。
     """
 
     expression: str
     answer: int
     operands: tuple[int, ...]
     operators: tuple[str, ...]
+    blank_index: int | None = None
+    paren_pos: int | None = None
 
 
 @dataclass(frozen=True)
@@ -42,6 +49,11 @@ class PracticeConfig:
         include_parentheses: 混合运算是否允许出现一层括号。
         per_page: 每页展示的题目数量。
         seed: 随机种子；指定后生成结果完全可复现，便于测试。
+        blank_position: 填空位置模式；``"last"`` 固定填等号右侧
+            （求结果），``"any"`` 每题随机填结果或任一操作数。
+        operand_count: 每题操作数个数；0 表示默认两个数（混合运算
+            保持原随机 2–3 个运算符），2/3 表示固定目数，
+            :data:`OPERAND_COUNT_RANDOM`（-1）表示每题随机 2 或 3。
     """
 
     category: OperationCategory
@@ -52,3 +64,5 @@ class PracticeConfig:
     include_parentheses: bool = False
     per_page: int = 10
     seed: int | None = None
+    blank_position: str = "last"
+    operand_count: int = 0

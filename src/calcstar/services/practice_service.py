@@ -19,6 +19,7 @@ from calcstar.config import (
     DEFAULT_RANGE,
     MAX_COUNT,
     MIN_COUNT,
+    OPERAND_COUNT_RANDOM,
     OperationCategory,
     get_db_path,
     validate_params,
@@ -82,7 +83,8 @@ class PracticeService:
         Args:
             params: 参数字典，键为 category(str)/range_n/count/
                 duration_minutes(None 表示不限时)/allow_negative/
-                include_parentheses/per_page。
+                include_parentheses/per_page/blank_position("last"|
+                "any")/operand_count(0|2|3|"random")。
 
         Returns:
             会话摘要字典：
@@ -105,9 +107,21 @@ class PracticeService:
         allow_negative = bool(params.get("allow_negative", False))
         include_parentheses = bool(params.get("include_parentheses", False))
         per_page = params.get("per_page", DEFAULT_PER_PAGE)
+        blank_position = params.get("blank_position", "last")
+        raw_operand_count = params.get("operand_count", 0)
+        if raw_operand_count == "random":
+            operand_count = OPERAND_COUNT_RANDOM
+        else:
+            operand_count = int(raw_operand_count)
 
         errors = validate_params(
-            category, range_n, count, duration_minutes, per_page
+            category,
+            range_n,
+            count,
+            duration_minutes,
+            per_page,
+            blank_position=blank_position,
+            operand_count=operand_count,
         )
         if errors:
             raise InvalidParamsError(errors)
@@ -120,6 +134,8 @@ class PracticeService:
             allow_negative=allow_negative,
             include_parentheses=include_parentheses,
             per_page=per_page,
+            blank_position=blank_position,
+            operand_count=operand_count,
         )
         questions = generate_questions(config)
         question_rows = [

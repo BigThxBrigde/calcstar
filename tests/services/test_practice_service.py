@@ -96,6 +96,34 @@ class TestCreatePractice:
         assert result["duration_seconds"] is None
         assert result["total_pages"] == 2
 
+    def test_invalid_blank_position_and_operand_count(self, service):
+        """blank_position/operand_count 非法值抛 InvalidParamsError。"""
+        with pytest.raises(InvalidParamsError) as excinfo:
+            service.create_practice({
+                "category": "add", "range_n": 10, "count": 5,
+                "duration_minutes": None, "per_page": 5,
+                "blank_position": "middle", "operand_count": 4,
+            })
+        errors = excinfo.value.errors
+        assert any("填空位置" in item for item in errors)
+        assert any("操作数个数" in item for item in errors)
+
+    def test_create_with_blank_any_and_random_operand_count(self, service):
+        """blank_position=any 与 operand_count="random" 正常创建：
+        随机目数两/三目均出现，填空位置不定且表达式互不重复。"""
+        result = service.create_practice({
+            "category": "add", "range_n": 20, "count": 40,
+            "duration_minutes": None, "per_page": 10,
+            "blank_position": "any", "operand_count": "random",
+        })
+        assert result["total_count"] == 40
+        expressions = [q["expression"] for q in result["questions"]]
+        assert len(set(expressions)) == 40
+        assert any(expr.count("+") == 2 for expr in expressions)
+        assert any(expr.count("+") == 1 for expr in expressions)
+        assert any("( )" in expr for expr in expressions)
+        assert any("( )" not in expr for expr in expressions)
+
 
 class TestSubmitPractice:
     def test_empty_answers_all_wrong(self, service):

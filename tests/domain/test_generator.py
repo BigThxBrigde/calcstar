@@ -338,3 +338,172 @@ def test_expression_format_and_answer_consistency(category):
     for question in questions:
         value, _ = evaluate_expression(question.expression)
         assert value == question.answer, question.expression
+
+
+# ---- 三目链式算式（operand_count=3） ----
+
+
+@pytest.mark.parametrize(
+    "category", _ALL_CATEGORIES, ids=[category.value for category in _ALL_CATEGORIES]
+)
+def test_three_operand_structure(category):
+    """三目模式：每题三个操作数、两个运算符，且批量产出充足。"""
+    questions = generate_questions(
+        make_config(category, range_n=30, count=40, seed=21, operand_count=3)
+    )
+    assert len(questions) == 40, category
+    expressions = [question.expression for question in questions]
+    assert len(set(expressions)) == 40, category
+    for question in questions:
+        assert len(question.operands) == 3, question.expression
+        assert len(question.operators) == 2, question.expression
+        assert question.blank_index is None
+
+
+@pytest.mark.parametrize(
+    "category", _ALL_CATEGORIES, ids=[category.value for category in _ALL_CATEGORIES]
+)
+def test_three_operand_bounds_and_consistency(category):
+    """三目模式：操作数与结果落在范围内，求值与答案一致。"""
+    range_n = 30
+    questions = generate_questions(
+        make_config(category, range_n=range_n, count=40, seed=23, operand_count=3)
+    )
+    for question in questions:
+        for operand in question.operands:
+            assert 0 <= operand <= range_n, (category, question.expression)
+        assert 0 <= question.answer <= range_n, (category, question.expression)
+        value, _ = evaluate_expression(question.expression)
+        assert value == question.answer, (category, question.expression)
+
+
+def test_three_operand_div_is_integral():
+    """三目除法链逐级整除，商即答案。"""
+    questions = generate_questions(
+        make_config(OperationCategory.DIV, range_n=50, count=40, seed=29, operand_count=3)
+    )
+    for question in questions:
+        dividend, divisor_b, divisor_c = question.operands
+        assert question.operators == ("÷", "÷")
+        assert dividend % divisor_b == 0
+        assert (dividend // divisor_b) % divisor_c == 0
+        assert question.answer == dividend // divisor_b // divisor_c
+
+
+def test_three_operand_sub_allow_negative():
+    """三目减法链允许负数时，中间与最终结果均不越界。"""
+    questions = generate_questions(
+        make_config(
+            OperationCategory.SUB, range_n=20, count=40, seed=31,
+            operand_count=3, allow_negative=True,
+        )
+    )
+    assert any(question.answer < 0 for question in questions)
+    for question in questions:
+        a, b, c = question.operands
+        assert question.operators == ("-", "-")
+        first = a - b
+        assert -20 <= first <= 20
+        assert -20 <= question.answer <= 20
+
+
+def test_mixed_three_operands_has_two_operators():
+    """四则混合在 operand_count=3 时固定为两个运算符。"""
+    questions = generate_questions(
+        make_config(OperationCategory.MIXED, range_n=30, count=40, seed=37, operand_count=3)
+    )
+    for question in questions:
+        assert len(question.operators) == 2, question.expression
+        assert len(question.operands) == 3, question.expression
+        assert any(op in "+-" for op in question.operators)
+        assert any(op in "×÷" for op in question.operators)
+
+
+def test_operand_count_random_mixes_two_and_three():
+    """operand_count=-1 时每题随机两目或三目，两种均会出现。"""
+    questions = generate_questions(
+        make_config(OperationCategory.ADD_SUB, range_n=30, count=80, seed=41,
+                    operand_count=-1)
+    )
+    sizes = {len(question.operands) for question in questions}
+    assert sizes == {2, 3}
+    for question in questions:
+        assert len(question.operators) == len(question.operands) - 1
+        value, _ = evaluate_expression(question.expression)
+        assert value == question.answer, question.expression
+
+
+# ---- 填空位置（blank_position） ----
+
+
+def test_blank_position_last_keeps_result_form():
+    """固定末尾（默认）：所有题仍是 a op b = 空白形式，等号结尾。"""
+    for category in (OperationCategory.ADD, OperationCategory.MIXED):
+        questions = generate_questions(
+            make_config(category, range_n=20, count=30, seed=43)
+        )
+        for question in questions:
+            assert question.blank_index is None
+            assert "( )" not in question.expression
+            assert question.expression.endswith(" =")
+
+
+def _assert_hidden_operand_question(question, range_n: int) -> None:
+    """校验一道隐藏操作数的填空题：还原后求值应等于等号后的结果。"""
+    assert question.blank_index is not None
+    assert 0 <= question.blank_index < len(question.operands)
+    assert "( )" in question.expression
+    hidden = question.operands[question.blank_index]
+    assert 0 <= hidden <= range_n
+    # 等号右侧给出原结果；把空白替换回真实操作数后应可求值且一致
+    left, _, right = question.expression.rpartition(" = ")
+    filled = left.replace("( )", str(hidden))
+    value, _ = evaluate_expression(filled + " =")
+    assert value == int(right), question.expression
+
+
+def test_blank_position_any_hides_operands_and_results():
+    """位置不定模式：既有求结果题也有藏操作数题，且藏数题答案正确。"""
+    questions = generate_questions(
+        make_config(OperationCategory.ADD_SUB, range_n=20, count=100, seed=47,
+                    blank_position="any")
+    )
+    hidden_count = 0
+    for question in questions:
+        if question.blank_index is None:
+            assert "( )" not in question.expression
+        else:
+            hidden_count += 1
+            _assert_hidden_operand_question(question, 20)
+    # 100 题中两种形式都应出现（约各半）
+    assert 0 < hidden_count < 100
+
+
+def test_blank_position_any_mixed_avoids_blank_adjacent_to_paren():
+    """混合 + 括号 + 位置不定：空白不得紧贴括号，还原后求值一致。"""
+    questions = generate_questions(
+        make_config(
+            OperationCategory.MIXED, range_n=20, count=60, seed=53,
+            blank_position="any", include_parentheses=True,
+        )
+    )
+    hidden_with_paren = 0
+    for question in questions:
+        if question.blank_index is None:
+            continue
+        if "(" in question.expression:
+            hidden_with_paren += 1
+            idx = question.expression.index("( )")
+            # 空白前一个字符不应是 "("，其后一个字符不应是 ")"
+            assert idx == 0 or question.expression[idx - 1] != "("
+            end = idx + 3
+            assert end >= len(question.expression) or question.expression[end] != ")"
+        _assert_hidden_operand_question(question, 20)
+    assert hidden_with_paren > 0
+
+
+def test_blank_position_any_reproducible():
+    """位置不定模式同样受种子控制，结果可复现。"""
+    config = make_config(OperationCategory.ADD, range_n=20, count=30, seed=59,
+                         blank_position="any")
+    assert generate_questions(config) == generate_questions(config)

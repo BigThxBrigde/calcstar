@@ -42,6 +42,15 @@ DEFAULT_RANGE = 10
 DEFAULT_COUNT = 20
 DEFAULT_PER_PAGE = 10
 
+#: 填空位置模式：固定填在等号右侧（求结果）
+BLANK_POSITION_LAST = "last"
+#: 填空位置模式：每题随机填结果或任一操作数
+BLANK_POSITION_ANY = "any"
+#: 操作数个数取值：表示每题在 2 与 3 之间随机
+OPERAND_COUNT_RANDOM = -1
+#: 操作数个数取值：表示使用各类别的默认目数（两个数）
+OPERAND_COUNT_DEFAULT = 0
+
 
 def get_user_data_dir() -> Path:
     """获取用户数据目录并确保其存在（目录不存在时自动创建）。
@@ -87,6 +96,8 @@ def validate_params(
     count: int,
     duration_minutes: int | None,
     per_page: int,
+    blank_position: str = BLANK_POSITION_LAST,
+    operand_count: int = OPERAND_COUNT_DEFAULT,
 ) -> list[str]:
     """校验练习参数，返回错误信息列表（空列表表示参数合法）。
 
@@ -96,7 +107,9 @@ def validate_params(
     - count 落在 [MIN_COUNT, MAX_COUNT]；
     - duration_minutes 为 None（不限时）或落在
       [MIN_DURATION_MINUTES, MAX_DURATION_MINUTES]；
-    - per_page 属于 PER_PAGE_PRESETS，或至少为 1 且不超过 count。
+    - per_page 属于 PER_PAGE_PRESETS，或至少为 1 且不超过 count；
+    - blank_position 取值为 "last"（固定末尾）或 "any"（位置不定）；
+    - operand_count 取值为 0（默认两个数）、2、3 或 -1（随机 2/3）。
     """
     errors: list[str] = []
 
@@ -128,6 +141,23 @@ def validate_params(
         errors.append(
             f"每页题数无效：{per_page}"
             f"（应属于 {PER_PAGE_PRESETS}，或满足 1 ≤ 每页题数 ≤ 题目数量）"
+        )
+
+    if blank_position not in (BLANK_POSITION_LAST, BLANK_POSITION_ANY):
+        errors.append(
+            f"填空位置模式无效：{blank_position}"
+            f"（可选值：{BLANK_POSITION_LAST}、{BLANK_POSITION_ANY}）"
+        )
+
+    if operand_count not in (
+        OPERAND_COUNT_RANDOM,
+        OPERAND_COUNT_DEFAULT,
+        2,
+        3,
+    ):
+        errors.append(
+            f"操作数个数无效：{operand_count}"
+            f"（可选值：{OPERAND_COUNT_DEFAULT}、2、3、{OPERAND_COUNT_RANDOM}）"
         )
 
     return errors
