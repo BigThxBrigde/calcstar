@@ -1,8 +1,8 @@
 # Tasks
 
 - [ ] Task 0: 初始化 Git 仓库
-  - [ ] SubTask 0.1: 执行 `git init`，编写适配 Python/PyInstaller 的 `.gitignore`（`__pycache__`、`.venv`、`.pytest_cache`、`build/`、`dist/`、`*.db` 等）
-  - [ ] SubTask 0.2: 确认仓库状态干净（`git status`），后续每个任务完成后按需提交
+  - [x] SubTask 0.1: 执行 `git init`，编写适配 Python/PyInstaller 的 `.gitignore`（`__pycache__`、`.venv`、`.pytest_cache`、`build/`、`dist/`、`*.db` 等）
+  - [x] SubTask 0.2: 确认仓库状态干净（`git status`），后续每个任务完成后按需提交
 
 - [ ] Task 1: 搭建项目骨架与桌面套壳
   - [ ] SubTask 1.1: 创建目录结构 `app/`（后端）、`web/`（前端）、`tests/`，编写 `requirements.txt`（pywebview、pyinstaller、pytest、pytest-cov）
