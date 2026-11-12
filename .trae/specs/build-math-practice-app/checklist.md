@@ -1,13 +1,14 @@
 # Checklist
 
 ## 工程与构建
-- [ ] 存在 `pyproject.toml`（PEP 621，setuptools src 布局），声明 PyQt6/PyQt6-WebEngine 依赖与 dev 依赖组
-- [ ] `[project.scripts]` 提供 `calcstar` 命令；`pip install -e .[dev]` 后 `calcstar` 与 `python -m calcstar` 均可启动
+- [ ] 项目根目录存在 `.venv`（venv），pytest/运行/打包均通过 venv 解释器执行
+- [ ] 存在 `pyproject.toml`（PEP 621，setuptools src 布局），声明 PyQt5/PyQtWebEngine 依赖与 dev 依赖组
+- [ ] `[project.scripts]` 提供 `calcstar` 命令；venv 内 `pip install -e .[dev]` 后 `calcstar` 与 `python -m calcstar` 均可启动
 - [ ] pytest 与覆盖率配置写在 pyproject.toml，无散落的 pytest.ini
 - [ ] 包分层为 `src/calcstar/{config,domain,data,services,bridge,desktop}`，层间单向依赖
 
 ## 启动与套壳
-- [ ] `calcstar` / `python -m calcstar` 能打开原生窗口并加载本地前端资源，窗口初始尺寸约 1024×720
+- [ ] venv 内运行 `calcstar` / `python -m calcstar` 能打开原生窗口并加载本地前端资源，窗口初始尺寸约 1024×720
 - [ ] 运行期不启动 HTTP 服务、不监听任何端口，无需浏览器参与
 - [ ] 使用 QtWebEngine（自带 Chromium），目标机器无需安装 WebView2 或任何浏览器即可渲染
 - [ ] 关闭窗口后进程完全退出，无残留后台进程

@@ -4,13 +4,14 @@
   - [x] SubTask 0.1: 执行 `git init`，编写适配 Python/PyInstaller 的 `.gitignore`（`__pycache__`、`.venv`、`.pytest_cache`、`build/`、`dist/`、`*.db`、`*.egg-info` 等）
   - [x] SubTask 0.2: 确认仓库状态干净（`git status`），后续每个任务完成后按需提交
 
-- [ ] Task 1: pyproject 工程骨架与桌面壳
-  - [ ] SubTask 1.1: 创建 `pyproject.toml`（setuptools + src 布局）：元数据、运行依赖 `PyQt6`/`PyQt6-WebEngine`、dev 依赖组（pytest、pytest-cov、pyinstaller）、`[project.scripts] calcstar`、pytest/覆盖率配置（`--cov=calcstar --cov-fail-under=85`）；更新 `.gitignore`
+- [ ] Task 1: venv 环境与 pyproject 工程骨架、桌面壳
+  - [ ] SubTask 1.0: `python -m venv .venv` 创建虚拟环境；后续所有命令均使用 `.\.venv\Scripts\python.exe` / `pip`
+  - [ ] SubTask 1.1: 创建 `pyproject.toml`（setuptools + src 布局）：元数据、运行依赖 `PyQt5`/`PyQtWebEngine`、dev 依赖组（pytest、pytest-cov、pyinstaller）、`[project.scripts] calcstar`、pytest/覆盖率配置（`--cov=calcstar --cov-fail-under=85`）；更新 `.gitignore`；在 venv 内 `pip install -e .[dev]`
   - [ ] SubTask 1.2: 创建 `src/calcstar/` 分层骨架：`config.py`、`domain/`（models/generator/grading）、`data/`（database/repositories）、`services/`（practice_service/stats_service）、`bridge/`（api）、`desktop/`（window），各层 `__init__.py`；提供 `python -m calcstar` 入口（`__main__.py`）
   - [ ] SubTask 1.3: 实现 `config.py`：用户数据目录与数据库路径（`%APPDATA%\CalcStar`，支持 `CALCSTAR_DB` 覆盖）、开发态/打包态资源目录解析、参数枚举与默认值
   - [ ] SubTask 1.4: 实现 `desktop/window.py`：QWebEngineView 主窗口 1024×720、加载本地 `web/index.html`、QWebChannel 注册桥接对象、关闭窗口即退出进程
-  - [ ] SubTask 1.5: `pip install -e .[dev]` 安装后验证 `calcstar` 命令与 `python -m calcstar` 均能启动空窗口
-  - [ ] SubTask 1.6: 编写 `CalcStar.spec` 与 `build.ps1`（PyInstaller `--onefile --windowed`，内置 web 资源与 QtWebEngine 运行时），产出 `dist\CalcStar.exe`
+  - [ ] SubTask 1.5: 验证 venv 内 `calcstar` 命令与 `python -m calcstar` 均能启动空窗口
+  - [ ] SubTask 1.6: 编写 `CalcStar.spec` 与 `build.ps1`（PyInstaller `--onefile --windowed`，使用 venv 解释器运行 PyInstaller，内置 web 资源与 QtWebEngine 运行时），产出 `dist\CalcStar.exe`
 
 - [ ] Task 2: 领域层——出题引擎 `domain/`
   - [ ] SubTask 2.1: `domain/models.py`：Question、PracticeConfig 等数据类（表达式文本、正确答案、运算符序列、练习参数）
