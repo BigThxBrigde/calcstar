@@ -26,13 +26,13 @@
   - [x] SubTask 3.3: `data/repositories.py`：会话创建、提交判分落库、订正更新、错题集聚合与查询、历史列表与明细查询
   - [x] SubTask 3.4: 编写 `tests/data/test_repositories.py`，覆盖建表、判分写入、错题聚合与重复错误累计
 
-- [ ] Task 4: 服务层与桥接层
-  - [ ] SubTask 4.1: `services/practice_service.py` 创建练习：校验参数 → 生成题目 → 写入会话 → 返回题目（含分页元数据）与限时信息
-  - [ ] SubTask 4.2: `services/practice_service.py` 提交练习：判分（复用 `domain/grading.py`）→ 返回得分、用时、错题清单
-  - [ ] SubTask 4.3: 提交订正：更新错题答案与轮次，全部正确则标记通过并返回结果
-  - [ ] SubTask 4.4: `services/stats_service.py`：历史成绩列表、单次练习明细、错题集（类别筛选与排序）
-  - [ ] SubTask 4.5: 用错题生成新练习的接口；`bridge/api.py` 统一包装返回值与错误为 `{"ok": bool, "data"/"error": ...}` 并注册到 QWebChannel
-  - [ ] SubTask 4.6: 编写 `tests/services/` 与 `tests/bridge/` 测试，覆盖：非法参数、未作答判分、订正多轮至全对、超时提交、历史分页与明细、错题聚合/筛选/排序、桥接层错误封装
+- [x] Task 4: 服务层与桥接层
+  - [x] SubTask 4.1: `services/practice_service.py` 创建练习：校验参数 → 生成题目 → 写入会话 → 返回题目（含分页元数据）与限时信息
+  - [x] SubTask 4.2: `services/practice_service.py` 提交练习：判分（复用 `domain/grading.py`）→ 返回得分、用时、错题清单
+  - [x] SubTask 4.3: 提交订正：更新错题答案与轮次，全部正确则标记通过并返回结果
+  - [x] SubTask 4.4: `services/stats_service.py`：历史成绩列表、单次练习明细、错题集（类别筛选与排序）
+  - [x] SubTask 4.5: 用错题生成新练习的接口；`bridge/api.py` 统一包装返回值与错误为 `{"ok": bool, "data"/"error": ...}` 并注册到 QWebChannel
+  - [x] SubTask 4.6: 编写 `tests/services/` 与 `tests/bridge/` 测试，覆盖：非法参数、未作答判分、订正多轮至全对、超时提交、历史分页与明细、错题聚合/筛选/排序、桥接层错误封装
 
 - [ ] Task 5: 前端公共框架与设置页面（儿童活泼风设计系统）
   - [ ] SubTask 5.1: 实现 `web/index.html` + `web/css/style.css` 设计令牌与组件（奶油色背景、橙/黄/绿/蓝/紫配色、24px 圆角卡片、胶囊按钮、彩色柔和投影、内联 SVG 星星/奖杯装饰、Toast 与焦点环、`prefers-reduced-motion` 降级）
