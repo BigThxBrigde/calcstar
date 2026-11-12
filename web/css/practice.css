@@ -1,0 +1,274 @@
+/* ============================================================
+   CalcStar 练习做题页专属样式（Task 6）
+   复用 style.css 设计令牌：奶油底 + 糖果色 + 大圆角 + 胶囊
+   ============================================================ */
+
+/* ---------- 顶部栏：标题 + 右上角计时器 ---------- */
+.practice-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 8px 6px 12px;
+  background: var(--bg);
+}
+
+.practice-heading {
+  min-width: 0;
+}
+
+.practice-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 1px;
+}
+
+.practice-title-icon {
+  flex: none;
+  display: inline-flex;
+  color: var(--yellow-deep);
+}
+
+.practice-progress {
+  margin: 4px 0 0;
+  color: var(--ink-soft);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.timer-pill {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  border: 2px solid var(--card-line);
+  box-shadow: var(--shadow-chip);
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.timer-pill .timer-icon {
+  display: inline-flex;
+  color: var(--blue);
+}
+
+.timer-pill.is-urgent {
+  border-color: var(--red);
+  color: var(--red);
+  animation: timer-pulse 1s ease-in-out infinite;
+}
+
+.timer-pill.is-urgent .timer-icon {
+  color: var(--red);
+}
+
+@keyframes timer-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+/* ---------- 题目网格（3~4 列响应式） ---------- */
+.question-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 6px;
+}
+
+@media (min-width: 1100px) {
+  .question-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 719px) {
+  .question-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+}
+
+.question-card {
+  position: relative;
+  background: var(--card);
+  border: 2px solid var(--card-line);
+  border-radius: 18px;
+  padding: 16px 16px 14px;
+  box-shadow: 0 4px 12px rgba(214, 158, 84, 0.10);
+  transition: border-color 0.15s ease;
+}
+
+.question-card.is-answered {
+  border-color: var(--green);
+}
+
+.q-seq {
+  position: absolute;
+  top: -9px;
+  left: -9px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--yellow), var(--yellow-deep));
+  color: #6B4700;
+  border: 2px solid #FFFFFF;
+  box-shadow: 0 3px 8px rgba(242, 169, 0, 0.35);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.q-expression {
+  margin: 6px 0 12px;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.q-input {
+  width: 100%;
+  padding: 9px 14px;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: #FFFDF6;
+  color: var(--ink);
+  font-size: 19px;
+  font-weight: 800;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.q-input:hover {
+  border-color: var(--yellow-deep);
+}
+
+.q-input:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: var(--ring);
+}
+
+/* ---------- 翻页控件 ---------- */
+.pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.page-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 22px;
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--line);
+  background: #FFF6E1;
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 15px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.15s ease, opacity 0.15s ease;
+}
+
+.page-btn svg {
+  display: block;
+}
+
+.page-btn:hover:not(:disabled) {
+  border-color: var(--yellow-deep);
+  transform: translateY(-1px);
+}
+
+.page-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.page-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.page-indicator {
+  min-width: 96px;
+  text-align: center;
+  padding: 8px 18px;
+  border-radius: var(--radius-pill);
+  border: 2px dashed var(--line);
+  background: var(--card);
+  font-weight: 900;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 底部提交 ---------- */
+.practice-footer {
+  text-align: center;
+  margin-top: 24px;
+  padding-bottom: 8px;
+}
+
+.practice-footer .btn-primary {
+  min-width: 240px;
+  justify-content: center;
+}
+
+.practice-tip {
+  margin: 12px 0 0;
+  color: var(--ink-soft);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+/* ---------- 空状态 ---------- */
+.empty-hint {
+  padding: 64px 20px;
+  text-align: center;
+  color: var(--ink-soft);
+  font-weight: 700;
+  font-size: 16px;
+}
+
+/* ---------- 小屏微调 ---------- */
+@media (max-width: 719px) {
+  .practice-title {
+    font-size: 19px;
+  }
+
+  .q-expression {
+    font-size: 20px;
+  }
+
+  .page-btn {
+    padding: 8px 16px;
+  }
+}
+
+/* ---------- 动效降级（style.css 已全局降级，此处显式兜底） ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .timer-pill.is-urgent {
+    animation: none;
+  }
+}
