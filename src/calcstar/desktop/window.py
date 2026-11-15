@@ -10,9 +10,39 @@ import sys
 from PyQt5.QtCore import QUrl
 from PyQt5.QtWebChannel import QWebChannel
 from PyQt5.QtWebEngineWidgets import QWebEnginePage, QWebEngineProfile, QWebEngineView
-from PyQt5.QtWidgets import QApplication, QMainWindow
+from PyQt5.QtWidgets import QApplication, QFileDialog, QMainWindow
 
 from calcstar.config import get_index_html_path
+
+
+def _make_report_exporter(window: QMainWindow):
+    """构造成绩单导出器：弹另存为对话框后离屏渲染 PDF。
+
+    供 desktop 注入 bridge；用户取消对话框返回 None（不视为错误）。
+    """
+
+    def exporter(detail: dict, suggested_filename: str) -> str | None:
+        from calcstar.desktop.report_exporter import (
+            ReportExportError,
+            build_default_filename,
+            export_report_pdf,
+        )
+
+        default_name = suggested_filename or build_default_filename(detail)
+        target, _ = QFileDialog.getSaveFileName(
+            window,
+            "保存成绩单",
+            default_name,
+            "PDF 文件 (*.pdf);;所有文件 (*.*)",
+        )
+        if not target:
+            return None
+        try:
+            return export_report_pdf(detail, target)
+        except ReportExportError as exc:
+            raise RuntimeError(str(exc)) from exc
+
+    return exporter
 
 
 class MainWindow(QMainWindow):
@@ -34,7 +64,7 @@ class MainWindow(QMainWindow):
         self._channel = QWebChannel(self)
         self._page.setWebChannel(self._channel)
 
-        # 桥接对象由 calcstar.bridge.api 提供（后续任务实现），缺席时跳过注册
+        # 桥接对象由 calcstar.bridge.api 提供，缺席时跳过注册
         self._bridge = None
         try:
             from calcstar.bridge.api import create_bridge
@@ -43,7 +73,9 @@ class MainWindow(QMainWindow):
 
         if create_bridge is not None:
             try:
-                self._bridge = create_bridge()
+                self._bridge = create_bridge(
+                    report_exporter=_make_report_exporter(self)
+                )
             except Exception:
                 self._bridge = None
             if self._bridge is not None:

@@ -31,6 +31,8 @@ CS.pages.result = (function () {
     '<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>';
   const ICON_HOME =
     '<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>';
+  const ICON_DOWNLOAD =
+    '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg>';
   const STAR_DECO =
     '<svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
 
@@ -40,6 +42,7 @@ CS.pages.result = (function () {
 
   let data = null;                 // CS.state.practice
   let submittingCorrection = false;
+  let exportingReport = false;
   let correctionInputs = {};       // seq字符串 → input 元素
   let built = false;
 
@@ -115,6 +118,7 @@ CS.pages.result = (function () {
       "  </div>" +
       '  <div class="result-actions">' +
       '    <button type="button" class="btn-primary home-btn"><span class="btn-label">返回首页</span>' + ICON_HOME + "</button>" +
+      '    <button type="button" class="btn-soft export-btn"><span class="btn-label">导出成绩单</span>' + ICON_DOWNLOAD + "</button>" +
       "  </div>" +
       "</div>" +
       '<div class="wrong-card card">' +
@@ -141,6 +145,8 @@ CS.pages.result = (function () {
     els.statValues = pageEl.querySelectorAll(".result-stats .stat-chip:not(.is-timeout) .chip-value");
     els.timeoutChip = pageEl.querySelector(".stat-chip.is-timeout");
     els.homeBtn = pageEl.querySelector(".home-btn");
+    els.exportBtn = pageEl.querySelector(".export-btn");
+    els.exportLabel = pageEl.querySelector(".export-btn .btn-label");
     els.wrongCard = pageEl.querySelector(".wrong-card");
     els.roundBadge = pageEl.querySelector(".round-badge");
     els.wrongList = pageEl.querySelector(".wrong-list");
@@ -154,6 +160,9 @@ CS.pages.result = (function () {
     els.homeBtn.addEventListener("click", goHome);
     els.quitBtn.addEventListener("click", goHome);
     els.emptyHomeBtn.addEventListener("click", goHome);
+    els.exportBtn.addEventListener("click", function () {
+      exportReport();
+    });
     els.correctionBtn.addEventListener("click", function () {
       submitCorrection();
     });
@@ -195,6 +204,7 @@ CS.pages.result = (function () {
       els.sub.textContent = "别灰心，订正全对也一样棒！";
     }
     els.homeBtn.classList.toggle("hidden", !allDone);
+    els.exportBtn.classList.remove("hidden");
     els.wrongCard.classList.toggle("hidden", allDone);
     els.passedNote.classList.toggle("hidden", !allDone);
 
@@ -297,6 +307,7 @@ CS.pages.result = (function () {
   function showEmpty() {
     data = null;
     els.hero.classList.add("hidden");
+    els.exportBtn.classList.add("hidden");
     els.wrongCard.classList.add("hidden");
     els.passedNote.classList.add("hidden");
     els.emptyHint.classList.remove("hidden");
@@ -379,6 +390,44 @@ CS.pages.result = (function () {
       if (first) {
         first.focus();
       }
+    }
+  }
+
+  /* ---------- 导出成绩单 ---------- */
+
+  /** 调用后端导出本次练习成绩单 PDF（含逐题明细） */
+  async function exportReport() {
+    if (exportingReport || !data) {
+      return;
+    }
+    const sessionId = data.sessionId ||
+      (CS.state.currentSession && CS.state.currentSession.session_id);
+    if (sessionId == null) {
+      CS.toast.error("找不到练习会话，无法导出");
+      return;
+    }
+
+    exportingReport = true;
+    els.exportBtn.disabled = true;
+    els.exportLabel.textContent = "导出中…";
+
+    try {
+      const res = await CS.api.callBridge("export_report_pdf", {
+        session_id: sessionId
+      });
+      if (res && res.cancelled) {
+        CS.toast.info("已取消导出");
+      } else if (res && res.path) {
+        CS.toast.success("成绩单已保存：" + res.path);
+      } else {
+        CS.toast.error("导出失败，请重试");
+      }
+    } catch (err) {
+      CS.toast.error(err && err.message ? err.message : "导出失败，请重试");
+    } finally {
+      exportingReport = false;
+      els.exportBtn.disabled = false;
+      els.exportLabel.textContent = "导出成绩单";
     }
   }
 

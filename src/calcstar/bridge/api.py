@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional, Union
+from typing import Callable, Optional, Union
 
 from PyQt5.QtCore import QObject, pyqtSlot
 
@@ -19,6 +19,8 @@ from calcstar.services.practice_service import PracticeService
 from calcstar.services.stats_service import StatsService
 
 _DBPath = Union[str, Path]
+#: 导出器签名：(会话明细, 建议文件名) -> 保存路径；用户取消返回 None
+_ReportExporter = Callable[[dict, str], Optional[str]]
 
 
 class CalcStarBridge(QObject):
@@ -32,6 +34,7 @@ class CalcStarBridge(QObject):
         self,
         practice_service: Optional[PracticeService] = None,
         stats_service: Optional[StatsService] = None,
+        report_exporter: Optional[_ReportExporter] = None,
         parent: Optional[QObject] = None,
     ) -> None:
         """初始化桥接对象。
@@ -39,6 +42,8 @@ class CalcStarBridge(QObject):
         Args:
             practice_service: 练习服务实例；None 时按默认数据库路径创建。
             stats_service: 统计服务实例；None 时按默认数据库路径创建。
+            report_exporter: 成绩单 PDF 导出器（desktop 层注入）；None 时
+                导出接口返回"不支持"错误。
             parent: Qt 父对象。
         """
         super().__init__(parent)
@@ -46,6 +51,7 @@ class CalcStarBridge(QObject):
             practice_service if practice_service is not None else PracticeService()
         )
         self._stats = stats_service if stats_service is not None else StatsService()
+        self._report_exporter = report_exporter
 
     # ---- 内部工具 ----
 
@@ -152,8 +158,34 @@ class CalcStarBridge(QObject):
 
         return self._respond(run)
 
+    # ---- 成绩单导出 ----
 
-def create_bridge(db_path: Optional[_DBPath] = None) -> CalcStarBridge:
+    @pyqtSlot(str, result=str)
+    def export_report_pdf(self, payload: str) -> str:
+        """导出本次练习成绩单 PDF：payload 为 {session_id}。
+
+        流程：查会话明细 → 调用 desktop 注入的导出器（内含另存为
+        弹窗与离屏渲染）→ 返回 {path}；用户取消对话框返回
+        {cancelled: true}，导出器缺席或生成失败返回 ok=False。
+        """
+        def run() -> dict:
+            data = self._parse_payload(payload)
+            if self._report_exporter is None:
+                raise RuntimeError("当前环境不支持导出成绩单")
+            detail = self._stats.get_session_detail(int(data["session_id"]))
+            suggested = data.get("filename") or ""
+            path = self._report_exporter(detail, suggested)
+            if path is None:
+                return {"cancelled": True, "path": None}
+            return {"cancelled": False, "path": str(path)}
+
+        return self._respond(run)
+
+
+def create_bridge(
+    db_path: Optional[_DBPath] = None,
+    report_exporter: Optional[_ReportExporter] = None,
+) -> CalcStarBridge:
     """桥接对象工厂：创建并返回 :class:`CalcStarBridge`。
 
     内部按 db_path 各创建一个 PracticeService / StatsService 实例并
@@ -162,8 +194,10 @@ def create_bridge(db_path: Optional[_DBPath] = None) -> CalcStarBridge:
 
     Args:
         db_path: 数据库文件路径；None 时使用 config.get_db_path()。
+        report_exporter: 成绩单 PDF 导出器（desktop 层注入）。
     """
     return CalcStarBridge(
         practice_service=PracticeService(db_path),
         stats_service=StatsService(db_path),
+        report_exporter=report_exporter,
     )

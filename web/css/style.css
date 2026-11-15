@@ -387,6 +387,26 @@ input {
   padding-top: 2px;
 }
 
+/* 更多选项：单行横向布局，元素间 3px 间距，空间不足自动换行 */
+.more-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  row-gap: 8px;
+}
+
+.more-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 3px;
+}
+
+.more-item.is-disabled .option-name,
+.more-item.is-disabled .switch {
+  opacity: 0.45;
+}
+
 .option-row.is-disabled .option-name,
 .option-row.is-disabled .option-hint {
   opacity: 0.45;

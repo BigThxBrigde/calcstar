@@ -131,6 +131,11 @@
 
 .result-actions {
   margin-top: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .result-actions .btn-primary {

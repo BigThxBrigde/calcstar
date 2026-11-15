@@ -180,6 +180,97 @@ class TestQueries:
         assert "不存在" in resp["error"]
 
 
+class TestExportReportPdf:
+    def _submit(self, bridge):
+        """创建并提交一局练习，返回 session_id。"""
+        data = _create(bridge)
+        answers = _answers_via_bridge(bridge, data["session_id"])
+        bridge.submit_practice(json.dumps({
+            "session_id": data["session_id"],
+            "answers": {str(seq): ans for seq, ans in answers.items()},
+            "duration_seconds": 30,
+        }))
+        return data["session_id"]
+
+    def test_export_ok(self, tmp_path):
+        """导出器返回路径：ok=True 且 data 含 path。"""
+        b = create_bridge(
+            tmp_path / "calcstar.db",
+            report_exporter=lambda detail, suggested: "C:/out/report.pdf",
+        )
+        try:
+            sid = self._submit(b)
+            resp = json.loads(b.export_report_pdf(
+                json.dumps({"session_id": sid})
+            ))
+            assert resp["ok"] is True
+            assert resp["data"]["cancelled"] is False
+            assert resp["data"]["path"] == "C:/out/report.pdf"
+        finally:
+            b._practice._conn.close()
+            b._stats._conn.close()
+
+    def test_export_cancelled(self, tmp_path):
+        """用户取消（导出器返回 None）：ok=True 且 cancelled=True。"""
+        b = create_bridge(
+            tmp_path / "calcstar.db",
+            report_exporter=lambda detail, suggested: None,
+        )
+        try:
+            sid = self._submit(b)
+            resp = json.loads(b.export_report_pdf(
+                json.dumps({"session_id": sid})
+            ))
+            assert resp["ok"] is True
+            assert resp["data"]["cancelled"] is True
+            assert resp["data"]["path"] is None
+        finally:
+            b._practice._conn.close()
+            b._stats._conn.close()
+
+    def test_export_failure_returns_error(self, tmp_path):
+        """导出器抛异常：ok=False 且 error 非空。"""
+        def boom(detail, suggested):
+            raise RuntimeError("PDF 生成失败")
+
+        b = create_bridge(tmp_path / "calcstar.db", report_exporter=boom)
+        try:
+            sid = self._submit(b)
+            resp = json.loads(b.export_report_pdf(
+                json.dumps({"session_id": sid})
+            ))
+            assert resp["ok"] is False
+            assert "PDF 生成失败" in resp["error"]
+        finally:
+            b._practice._conn.close()
+            b._stats._conn.close()
+
+    def test_export_without_exporter(self, bridge):
+        """未注入导出器：ok=False 且提示不支持。"""
+        sid = self._submit(bridge)
+        resp = json.loads(bridge.export_report_pdf(
+            json.dumps({"session_id": sid})
+        ))
+        assert resp["ok"] is False
+        assert "不支持" in resp["error"]
+
+    def test_export_missing_session(self, tmp_path):
+        """会话不存在：ok=False。"""
+        b = create_bridge(
+            tmp_path / "calcstar.db",
+            report_exporter=lambda detail, suggested: "x.pdf",
+        )
+        try:
+            resp = json.loads(b.export_report_pdf(
+                json.dumps({"session_id": 999})
+            ))
+            assert resp["ok"] is False
+            assert "不存在" in resp["error"]
+        finally:
+            b._practice._conn.close()
+            b._stats._conn.close()
+
+
 class TestFactory:
     def test_zero_arg_with_env_db(self, monkeypatch, tmp_path):
         """create_bridge() 零参调用兼容（CALCSTAR_DB 指向临时库）。"""

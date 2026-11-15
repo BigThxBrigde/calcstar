@@ -63,6 +63,20 @@
   - [x] SubTask 9.4: 按设计规范核对界面：配色、圆角卡片、胶囊按钮、动效、焦点环、960×640 最小尺寸与 3–4 列网格
   - [x] SubTask 9.5: 执行 `build.ps1` 打包，确认 `dist\CalcStar.exe` 为单文件、双击可启动、无控制台窗口、无端口监听、不依赖浏览器与 WebView2
 
+- [x] Task 10: 算式形式扩展——三目链式算式与可变填空位置
+  - [x] SubTask 10.1: `config.py` 新增 `blank_position`（固定末尾/位置不定）与 `operand_count`（两个数/三个数/随机）参数枚举与 `validate_params` 校验；`domain/models.py` 扩展 `PracticeConfig` 与 `Question`（`blank_index`/`paren_pos`）
+  - [x] SubTask 10.2: `domain/generator.py` 三目链式生成器（加/减/乘/除及加减/乘除混合链，从左到右求值，中间结果越界与整除约束）与 `_blank_question` 填空位置处理（隐藏操作数、括号相邻回退）
+  - [x] SubTask 10.3: 扩展生成器测试覆盖三目链式与填空位置；服务层与 `bridge/api.py` 透传新参数
+  - [x] SubTask 10.4: 设置页新增「算式形式」卡片（算式目数、填空位置芯片选择与提示文案）；更新 `docs/运行说明.md`
+
+- [x] Task 11: 成绩单导出与设置页布局微调
+  - [x] SubTask 11.1: 设置页「更多选项」卡片改单行横向布局（允许负数／包含括号／每页题数一行排布，元素间 3px margin，可换行）
+  - [x] SubTask 11.2: 新增 `services/report_service.py`：由会话明细构建自包含成绩单 HTML（成绩概览 + 逐题明细表，错题/未作答标红）
+  - [x] SubTask 11.3: 新增 `desktop/report_exporter.py`：离屏 QWebEnginePage 加载报告 HTML 并 `printToPdf` 输出 A4 PDF；`desktop/window.py` 注入导出器（QFileDialog 选择保存路径，取消返回 None）
+  - [x] SubTask 11.4: `bridge/api.py` 新增 `export_report_pdf` 槽（payload `{session_id, path?}`，统一信封；导出器缺席/取消/失败分别处理）
+  - [x] SubTask 11.5: 前端成绩页新增"导出成绩单"按钮（含导出中状态、成功/取消/失败 Toast，空状态隐藏）
+  - [x] SubTask 11.6: 编写 `tests/services/test_report_service.py` 与 `tests/bridge` 导出用例；运行 `pytest` 全绿且覆盖率达标
+
 # Task Dependencies
 - Task 0 已完成
 - Task 1 最先执行（pyproject 与分层骨架是其余任务的基础）
@@ -73,3 +87,5 @@
 - Task 7 依赖 Task 6 与 Task 4.2、4.3
 - Task 8 依赖 Task 5 与 Task 4.4、4.5
 - Task 9 依赖 Task 1–8 全部完成
+- Task 10 依赖 Task 9（在已完成闭环基础上扩展生成器与设置页），其中 10.1/10.2 先行、10.3 依赖前两者、10.4 依赖 10.3
+- Task 11 依赖 Task 9（成绩页与历史明细数据已就绪）：11.1 独立可并行；11.2 先行，11.3 依赖 11.2，11.4 依赖 11.2/11.3，11.5 依赖 11.4，11.6 收尾
