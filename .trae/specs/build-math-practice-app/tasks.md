@@ -102,6 +102,12 @@
 - [x] Task 16: 做题页答案输入导航增强
   - [x] SubTask 16.1: Tab/Shift+Tab 在题目输入框间前后移动（preventDefault 防跳出题目区），负索引保护
   - [x] SubTask 16.2: 点击题目卡片任意位置聚焦该题输入框（点输入框本身不改变光标）；spec/checklist 同步
+  - [x] SubTask 16.3（后增修订）: 按用户要求移除"输入合法答案停顿后自动跳下一题"逻辑，仅保留回车/Tab/点击/删空回退等手动导航
+
+- [x] Task 17: 修复打包后间距全部失效（QtWebEngine Chromium 83 不支持 flex gap）
+  - [x] SubTask 17.1: 定位根因：Qt 5.15.2 WebEngine 基于 Chromium 83，实测 flex `gap` 声明被解析但布局不生效（realGap=0），打包后所有 flex 间距为 0
+  - [x] SubTask 17.2: style/history/practice/result/wrongbook 五个 CSS 全部 flex gap 改为 margin 方案（换行容器用负 margin 补偿对齐，单向行用 `> * + *` margin，纵向列用 margin-top），grid gap（83 支持）保留
+  - [x] SubTask 17.3: `inset: 0` 简写（87+ 才支持）替换为显式 left/top/right/bottom；以应用同款引擎实测验证：chip 水平/垂直间距 12px、对齐正常
 
 # Task Dependencies
 - Task 0 已完成

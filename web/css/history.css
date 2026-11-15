@@ -8,15 +8,19 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
   flex-wrap: wrap;
-  margin-bottom: 16px;
+  /* QtWebEngine(Chromium 83) 不支持 flex gap，用 margin 实现间距 */
+  margin: -8px;
+  margin-bottom: 8px;
+}
+
+.his-head > * {
+  margin: 8px;
 }
 
 .page-back-btn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
   padding: 10px 22px;
   border: 2px solid var(--line);
   border-radius: var(--radius-pill);
@@ -38,9 +42,12 @@
   transform: translateY(1px);
 }
 
+.page-back-btn > * + * {
+  margin-left: 8px;
+}
+
 .page-tabs {
   display: inline-flex;
-  gap: 6px;
   padding: 5px;
   border-radius: var(--radius-pill);
   background: #FFFFFF;
@@ -58,6 +65,10 @@
   font-weight: 800;
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.page-tabs > * + * {
+  margin-left: 6px;
 }
 
 .page-tab:hover {
@@ -202,8 +213,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 18px;
   margin-top: 18px;
+}
+
+.his-pager > * + * {
+  margin-left: 18px;
 }
 
 .pager-btn {
@@ -244,19 +258,27 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
   flex-wrap: wrap;
-  margin-bottom: 14px;
+  margin: -7px;
+  margin-bottom: 7px;
+}
+
+.his-detail-head > * {
+  margin: 7px;
 }
 
 .his-detail-summary {
   display: flex;
   align-items: center;
-  gap: 12px;
   flex-wrap: wrap;
+  margin: -6px;
   color: var(--ink-soft);
   font-size: 14px;
   font-weight: 700;
+}
+
+.his-detail-summary > * {
+  margin: 6px;
 }
 
 .his-detail-summary b {
@@ -267,7 +289,10 @@
 .his-detail-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+}
+
+.his-detail-list > * + * {
+  margin-top: 8px;
 }
 
 /* 单题行：题号 + 算式 + 你的答案 + 正确答案 + 对错标记 */
@@ -378,11 +403,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
   padding: 44px 20px;
   color: var(--ink-soft);
   font-size: 15px;
   font-weight: 800;
+}
+
+.his-loading > * + * {
+  margin-left: 10px;
 }
 
 .his-spinner {

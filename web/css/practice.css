@@ -11,9 +11,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
   padding: 8px 6px 12px;
   background: var(--bg);
+}
+
+.practice-topbar > * + * {
+  margin-left: 14px;
 }
 
 .practice-heading {
@@ -23,11 +26,14 @@
 .practice-title {
   display: flex;
   align-items: center;
-  gap: 10px;
   margin: 0;
   font-size: 22px;
   font-weight: 900;
   letter-spacing: 1px;
+}
+
+.practice-title > * + * {
+  margin-left: 10px;
 }
 
 .practice-title-icon {
@@ -47,7 +53,6 @@
   flex: none;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
   padding: 10px 20px;
   border-radius: var(--radius-pill);
   background: var(--card);
@@ -68,6 +73,10 @@
   border-color: var(--red);
   color: var(--red);
   animation: timer-pulse 1s ease-in-out infinite;
+}
+
+.timer-pill > * + * {
+  margin-left: 8px;
 }
 
 .timer-pill.is-urgent .timer-icon {
@@ -174,14 +183,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 14px;
   margin-top: 20px;
+}
+
+.pagination-bar > * + * {
+  margin-left: 14px;
 }
 
 .page-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
   padding: 10px 22px;
   border-radius: var(--radius-pill);
   border: 2px solid var(--line);
@@ -195,6 +206,10 @@
 
 .page-btn svg {
   display: block;
+}
+
+.page-btn > * + * {
+  margin-left: 6px;
 }
 
 .page-btn:hover:not(:disabled) {

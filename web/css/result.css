@@ -99,14 +99,18 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 10px;
-  margin-top: 18px;
+  /* QtWebEngine(Chromium 83) 不支持 flex gap，用 margin 实现间距 */
+  margin: -5px;
+  margin-top: 13px;
+}
+
+.result-stats > * {
+  margin: 5px;
 }
 
 .stat-chip {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
   padding: 8px 18px;
   border-radius: var(--radius-pill);
   background: #FFF6E1;
@@ -117,6 +121,10 @@
 
 .stat-chip .chip-label {
   color: var(--ink-soft);
+}
+
+.stat-chip > * + * {
+  margin-left: 8px;
 }
 
 .stat-chip .chip-value {
@@ -130,12 +138,16 @@
 }
 
 .result-actions {
-  margin-top: 22px;
+  margin: -6px;
+  margin-top: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
   flex-wrap: wrap;
+}
+
+.result-actions > * {
+  margin: 6px;
 }
 
 .result-actions .btn-primary {
@@ -232,9 +244,14 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px 12px;
-  padding: 14px 2px;
+  /* QtWebEngine(Chromium 83) 不支持 flex gap（原 gap: 10px 12px），用 margin 实现间距 */
+  margin: -5px -6px;
+  padding: 9px 8px;
   border-top: 2px dashed var(--line);
+}
+
+.wrong-row > * {
+  margin: 5px 6px;
 }
 
 .wrong-row:first-child {
@@ -271,7 +288,6 @@
   flex: none;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
   padding: 6px 14px;
   border-radius: var(--radius-pill);
   font-weight: 800;
@@ -282,6 +298,10 @@
 .ans-label {
   font-size: 12px;
   opacity: 0.75;
+}
+
+.ans-pill > * + * {
+  margin-left: 4px;
 }
 
 .ans-user {
@@ -326,8 +346,12 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 14px;
-  margin-top: 20px;
+  margin: -7px;
+  margin-top: 13px;
+}
+
+.wrong-footer > * {
+  margin: 7px;
 }
 
 .wrong-footer .btn-primary {
@@ -347,7 +371,6 @@
 .btn-soft {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
   padding: 12px 28px;
   border-radius: var(--radius-pill);
   border: 2px solid var(--line);
@@ -363,6 +386,10 @@
   border-color: var(--yellow-deep);
   color: var(--ink);
   transform: translateY(-1px);
+}
+
+.btn-soft > * + * {
+  margin-left: 8px;
 }
 
 .btn-soft:active {

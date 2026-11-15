@@ -8,15 +8,19 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
   flex-wrap: wrap;
-  margin-bottom: 16px;
+  /* QtWebEngine(Chromium 83) 不支持 flex gap，用 margin 实现间距 */
+  margin: -8px;
+  margin-bottom: 8px;
+}
+
+.his-head > * {
+  margin: 8px;
 }
 
 .page-back-btn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
   padding: 10px 22px;
   border: 2px solid var(--line);
   border-radius: var(--radius-pill);
@@ -38,14 +42,21 @@
   transform: translateY(1px);
 }
 
+.page-back-btn > * + * {
+  margin-left: 8px;
+}
+
 .page-tabs {
   display: inline-flex;
-  gap: 6px;
   padding: 5px;
   border-radius: var(--radius-pill);
   background: #FFFFFF;
   border: 2px solid var(--card-line);
   box-shadow: var(--shadow-card);
+}
+
+.page-tabs > * + * {
+  margin-left: 6px;
 }
 
 .page-tab {
@@ -80,12 +91,17 @@
 .wrong-toolbar {
   display: flex;
   align-items: center;
-  gap: 14px;
   flex-wrap: wrap;
-  padding: 14px;
+  /* QtWebEngine(Chromium 83) 不支持 flex gap，用 margin 实现间距 */
+  margin: -7px;
+  padding: 21px;
   border: 2px dashed var(--line);
   border-radius: 18px;
   background: #FFFBF0;
+}
+
+.wrong-toolbar > * {
+  margin: 7px;
 }
 
 .wrong-select-label {
@@ -119,10 +135,13 @@
 
 .wrong-sort {
   display: inline-flex;
-  gap: 5px;
   padding: 4px;
   border-radius: var(--radius-pill);
   background: #FFF1D6;
+}
+
+.wrong-sort > * + * {
+  margin-left: 5px;
 }
 
 .sort-btn {
@@ -151,7 +170,6 @@
   margin-left: auto;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
   padding: 11px 28px;
   border: none;
   border-radius: var(--radius-pill);
@@ -300,11 +318,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
   padding: 44px 20px;
   color: var(--ink-soft);
   font-size: 15px;
   font-weight: 800;
+}
+
+.his-loading > * + * {
+  margin-left: 10px;
 }
 
 .his-spinner {

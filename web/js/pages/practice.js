@@ -24,7 +24,6 @@ CS.pages = CS.pages || {};
 
 CS.pages.practice = (function () {
   const TICK_MS = 250;            // 计时器刷新间隔
-  const AUTO_ADVANCE_MS = 650;    // 输入停顿后自动跳下一题的等待时长
   const URGENT_SECONDS = 60;      // 倒计时告急阈值（秒）
   const MAX_INPUT_LEN = 8;        // 答案最长字符数（覆盖 999×999+负号）
 
@@ -47,7 +46,6 @@ CS.pages.practice = (function () {
   let limitSeconds = 0;
   let submitting = false;
   let timerId = null;
-  let advanceTimerId = null; // 自动跳题延时器
   let pageInputs = [];       // 当前页的输入框（按题序）
   let built = false;
 
@@ -193,27 +191,19 @@ CS.pages.practice = (function () {
       }
       CS.state.answers[q.seq] = clean;
       refreshAnsweredState(input, card);
-      if (parseAnswer(clean) !== null) {
-        scheduleAutoAdvance(index);
-      } else {
-        cancelAutoAdvance();
-      }
     });
 
     input.addEventListener("focus", function () {
-      cancelAutoAdvance();
       input.select();
     });
 
     input.addEventListener("keydown", function (ev) {
       if (ev.key === "Enter") {
         ev.preventDefault();
-        cancelAutoAdvance();
         jumpTo(index + 1, true);
       } else if (ev.key === "Tab") {
         // Tab/Shift+Tab 在题目输入框间前后移动，不跳出题目区
         ev.preventDefault();
-        cancelAutoAdvance();
         jumpTo(index + (ev.shiftKey ? -1 : 1), false);
       } else if (ev.key === "Backspace" && input.value === "" && index > 0) {
         ev.preventDefault();
@@ -264,21 +254,6 @@ CS.pages.practice = (function () {
     }
   }
 
-  function scheduleAutoAdvance(index) {
-    cancelAutoAdvance();
-    advanceTimerId = setTimeout(function () {
-      advanceTimerId = null;
-      jumpTo(index + 1, false);
-    }, AUTO_ADVANCE_MS);
-  }
-
-  function cancelAutoAdvance() {
-    if (advanceTimerId) {
-      clearTimeout(advanceTimerId);
-      advanceTimerId = null;
-    }
-  }
-
   /** 当前页未作答的题号（人类编号）列表 */
   function collectUnanswered(pageNo) {
     const start = (pageNo - 1) * perPage;
@@ -300,7 +275,6 @@ CS.pages.practice = (function () {
     if (clamped === currentPage) {
       return;
     }
-    cancelAutoAdvance();
 
     const missing = collectUnanswered(currentPage);
     if (missing.length > 0) {
@@ -312,7 +286,6 @@ CS.pages.practice = (function () {
   }
 
   function renderPage(focusFirst) {
-    cancelAutoAdvance();
     pageInputs = [];
     els.grid.innerHTML = "";
 
@@ -383,7 +356,6 @@ CS.pages.practice = (function () {
       return;
     }
     submitting = true;
-    cancelAutoAdvance();
     els.submitBtn.disabled = true;
     els.submitLabel.textContent = "提交中…";
 
@@ -429,7 +401,6 @@ CS.pages.practice = (function () {
 
   function showEmpty() {
     stopTimer();
-    cancelAutoAdvance();
     els.body.classList.add("hidden");
     els.topbar.classList.add("hidden");
     els.emptyHint.classList.remove("hidden");
@@ -474,7 +445,6 @@ CS.pages.practice = (function () {
 
   function deactivate() {
     stopTimer();
-    cancelAutoAdvance();
   }
 
   function init() {
