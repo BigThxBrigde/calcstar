@@ -90,6 +90,17 @@ def get_index_html_path() -> Path:
     return get_resource_dir() / "index.html"
 
 
+def get_icon_path() -> Path:
+    """获取应用图标（assets/calcstar.ico）的路径。
+
+    PyInstaller 打包态（``sys.frozen`` 为真）返回解包临时目录下的
+    ``assets/calcstar.ico``；开发态返回仓库根目录的同名文件。
+    """
+    if getattr(sys, "frozen", False):
+        return Path(sys._MEIPASS) / "assets" / "calcstar.ico"
+    return Path(__file__).resolve().parents[2] / "assets" / "calcstar.ico"
+
+
 def validate_params(
     category: str,
     range_n: int,

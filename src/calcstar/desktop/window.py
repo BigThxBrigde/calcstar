@@ -8,11 +8,12 @@
 import sys
 
 from PyQt5.QtCore import QUrl
+from PyQt5.QtGui import QIcon
 from PyQt5.QtWebChannel import QWebChannel
 from PyQt5.QtWebEngineWidgets import QWebEnginePage, QWebEngineProfile, QWebEngineView
 from PyQt5.QtWidgets import QApplication, QFileDialog, QMainWindow
 
-from calcstar.config import get_index_html_path
+from calcstar.config import get_icon_path, get_index_html_path
 
 
 def _make_report_exporter(window: QMainWindow):
@@ -53,6 +54,11 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("CalcStar · 口算练习")
         self.resize(1024, 720)
         self.setMinimumSize(960, 640)
+
+        # 应用图标：任务栏/标题栏/窗口均使用内置 ico（缺席时静默跳过）
+        icon_path = get_icon_path()
+        if icon_path.exists():
+            self.setWindowIcon(QIcon(str(icon_path)))
 
         # Profile 须保存在 self 上，防止被垃圾回收导致页面崩溃
         self._profile = QWebEngineProfile(self)

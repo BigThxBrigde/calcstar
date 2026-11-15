@@ -10,6 +10,9 @@ for f in glob.glob(os.path.join("web", "**", "*"), recursive=True):
     if os.path.isfile(f):
         datas.append((f.replace("/", os.sep), os.path.dirname(f).replace("/", os.sep)))
 
+# 应用图标随包内置（运行期窗口图标由 config.get_icon_path 定位）
+datas.append((os.path.join("assets", "calcstar.ico"), "assets"))
+
 a = Analysis(
     ["src/calcstar/__main__.py"],
     pathex=["src"],
@@ -57,6 +60,7 @@ exe = EXE(
     strip=False,
     upx=False,  # 禁用 UPX：压缩 QtWebEngine 的 DLL 会导致运行异常
     console=False,
+    icon="assets/calcstar.ico",  # exe 文件图标（资源管理器/任务栏/快捷方式）
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
