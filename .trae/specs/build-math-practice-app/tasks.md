@@ -82,6 +82,23 @@
   - [x] SubTask 12.2: 历史页列表底部"清空历史"按钮（4 秒二次确认，确认态红色脉冲动效；空列表隐藏），清空后 Toast 提示数量并刷新
   - [x] SubTask 12.3: data 层与桥接层测试（删除计数、保留错题本、空库幂等）；spec/checklist 同步
 
+- [x] Task 13: 应用图标设计与打包内置
+  - [x] SubTask 13.1: 设计卡通星形计算器图标，生成多尺寸 `assets/calcstar.ico`（16–256px，圆角透明）与 `assets/calcstar.png`
+  - [x] SubTask 13.2: `config.get_icon_path()` 定位图标（打包态 _MEIPASS/assets，开发态仓库 assets）；`window.py` 设置窗口/任务栏图标
+  - [x] SubTask 13.3: `CalcStar.spec` 图标随包内置（datas）并写入 exe 资源（icon 参数）；重新打包验证
+
+- [x] Task 14: 更多选项恢复竖排布局与设置持久化
+  - [x] SubTask 14.1: 撤销单行布局，恢复"更多选项"纵向排布（option-row + 说明文案），移除 more-row/more-item 样式
+  - [x] SubTask 14.2: 新增 `data/settings_store.py`（JSON 白名单持久化 + 原子写入 + 损坏容错）与 `services/settings_service.py`；bridge 新增 `get_settings`/`save_settings` 槽
+  - [x] SubTask 14.3: 前端启动时回填上次设置（预设命中/自定义展开），开始练习时静默保存
+  - [x] SubTask 14.4: data/services/bridge 三层测试；spec/checklist 同步
+
+- [x] Task 15: 成绩单导出修复（卡死/崩溃）与历史行级导出
+  - [x] SubTask 15.1: 弃用离屏 QWebEnginePage 渲染，改用 QTextDocument + QPrinter 同步导出（A4 纵向、彩色表格 Qt 富文本子集），不再启动第二渲染进程
+  - [x] SubTask 15.2: report_service 重写为 Qt 富文本兼容 HTML（内联配色、错题标红、√/× 判定），报告测试重写
+  - [x] SubTask 15.3: 历史列表每行新增"导出"按钮（同一导出能力、防并发、导出中状态），导出测试覆盖真实 PDF 生成
+  - [x] SubTask 15.4: spec/checklist/README 同步并重新打包验证
+
 # Task Dependencies
 - Task 0 已完成
 - Task 1 最先执行（pyproject 与分层骨架是其余任务的基础）

@@ -23,5 +23,9 @@ htmlcov/
 .idea/
 .vscode/
 
+# Trae HTML 分享缓存与导出压缩包
+html.zip
+.trae-html-share-packages/
+
 # 日志
 *.log
