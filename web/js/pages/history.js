@@ -53,6 +53,7 @@ CS.pages.history = (function () {
   let silentTimer = null;
   let clearArmed = false; // 清空按钮二次确认状态
   let clearTimer = null;
+  let rowExporting = false; // 行级成绩单导出进行中（防并发）
 
   function $(id) {
     return document.getElementById(id);
@@ -239,6 +240,7 @@ CS.pages.history = (function () {
         '  <span class="his-cell">' + esc(formatAccuracy(row.correct_count, row.total_count)) + "</span>" +
         '  <span class="his-cell">' + esc(formatDuration(row.duration_seconds)) + "</span>" +
         '  <span class="his-cell">' + badgeHtml(row) + "</span>" +
+        '  <span class="his-cell"><span class="his-export" role="button" data-export-id="' + Number(row.id) + '" title="导出本次成绩单 PDF">导出</span></span>' +
         "</button>"
       );
     });
@@ -251,6 +253,13 @@ CS.pages.history = (function () {
     els.list.querySelectorAll(".his-row").forEach(function (btn) {
       btn.addEventListener("click", function () {
         openDetail(Number(btn.dataset.sessionId));
+      });
+    });
+
+    els.list.querySelectorAll(".his-export").forEach(function (span) {
+      span.addEventListener("click", function (ev) {
+        ev.stopPropagation();
+        exportRow(Number(span.dataset.exportId), span);
       });
     });
   }
@@ -318,9 +327,42 @@ CS.pages.history = (function () {
     loadPage(targetPage);
   }
 
-  /* ---------------- 清空历史 ---------------- */
+  /* ---------------- 行级成绩单导出 ---------------- */
 
-  /** 退出二次确认状态 */
+  /** 导出某一行的成绩单 PDF（弹出另存为对话框；防并发） */
+  async function exportRow(sessionId, span) {
+    if (rowExporting) {
+      return;
+    }
+    rowExporting = true;
+    const original = span.textContent;
+    span.textContent = "导出中…";
+    span.classList.add("is-busy");
+    CS.mask.show("正在生成成绩单…");
+    try {
+      const res = await CS.api.callBridge("export_report_pdf", {
+        session_id: sessionId,
+      });
+      if (res && res.cancelled) {
+        CS.toast.info("已取消导出");
+      } else if (res && res.path) {
+        CS.toast.success("成绩单已保存：" + res.path);
+      } else {
+        CS.toast.error("导出失败，请重试");
+      }
+    } catch (err) {
+      CS.toast.error(
+        err && err.message ? err.message : "导出成绩单失败，请重试"
+      );
+    } finally {
+      span.textContent = original;
+      span.classList.remove("is-busy");
+      rowExporting = false;
+      CS.mask.hide();
+    }
+  }
+
+  /* ---------------- 清空历史 ---------------- */  /** 退出二次确认状态 */
   function disarmClear() {
     clearArmed = false;
     if (clearTimer) {

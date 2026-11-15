@@ -1,114 +1,77 @@
 """成绩单 PDF 导出器（desktop 层）。
 
-用离屏 :class:`QWebEnginePage` 加载报告 HTML，等待渲染完成后调用
-``printToPdf`` 输出 A4 纵向 PDF。全程本地生成，无网络请求。
+把 services.report_service 构建的成绩单 HTML 用 QTextDocument +
+QPrinter 同步排版为 A4 纵向 PDF（本地生成，不请求网络资源，
+不启动第二渲染进程/离屏页面，避免卡死与崩溃）。
 
-依赖 QApplication 事件循环，仅在桌面运行态可用；单元测试不覆盖
-本模块（desktop 层当前 0% 覆盖率为既有基线）。
+由 desktop.window 注入到 bridge（bridge → desktop 单向依赖，
+接口在 bridge._ReportExporter 中定义）。
 """
 
 from __future__ import annotations
 
-import os
-import tempfile
-from datetime import datetime
 from pathlib import Path
 
-from PyQt5.QtCore import QEventLoop, QMarginsF, QTimer, QUrl
-from PyQt5.QtGui import QPageLayout, QPageSize
-from PyQt5.QtWebEngineWidgets import QWebEnginePage
+from PyQt5.QtCore import QMarginsF
+from PyQt5.QtGui import QFont, QPageLayout, QPageSize, QTextDocument
+from PyQt5.QtPrintSupport import QPrinter
 
 from calcstar.services.report_service import build_report_html
 
-#: 渲染 + 打印总等待超时（毫秒）
-_PRINT_TIMEOUT_MS = 30_000
-
 
 class ReportExportError(RuntimeError):
-    """成绩单导出失败（渲染超时或打印失败）。"""
+    """成绩单导出失败（含生成结果缺失等异常情况）。"""
 
 
-def build_default_filename(detail: dict) -> str:
-    """按会话开始时间构造默认文件名，如 ``CalcStar成绩单_20261113-0732.pdf``。"""
-    started = str(detail.get("started_at") or "")
-    stamp = ""
-    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S"):
-        try:
-            stamp = datetime.strptime(started, fmt).strftime("%Y%m%d-%H%M")
-            break
-        except ValueError:
-            continue
-    if not stamp:
-        stamp = datetime.now().strftime("%Y%m%d-%H%M")
-    return f"CalcStar成绩单_{stamp}.pdf"
-
-
-def export_report_pdf(detail: dict, target_path: str | Path) -> str:  # pragma: no cover
-    """把会话明细渲染为 PDF 成绩单并写入目标路径。
+def export_report_pdf(detail: dict, target_path: str) -> str:
+    """把会话明细导出为成绩单 PDF（同步、本地）。
 
     Args:
-        detail: ``get_session_detail`` 返回的会话字典（含 questions）。
-        target_path: PDF 保存路径（须已确定，另存为弹窗由调用方负责）。
+        detail: ``data.repositories.get_session_detail`` 返回的会话字典。
+        target_path: 目标 PDF 文件路径（含文件名）。
 
     Returns:
-        写入的绝对路径字符串。
+        实际写入的 PDF 绝对路径字符串。
 
     Raises:
-        ReportExportError: 渲染或打印失败/超时、文件未落盘时抛出。
-
-    Note:
-        依赖 QApplication 与离屏 QtWebEngine 渲染，仅在桌面运行态
-        可执行，不纳入单元测试覆盖率。
+        ReportExportError: 文件创建失败或生成结果缺失。
     """
-    target = Path(target_path).resolve()
+    target = Path(target_path).expanduser().resolve()
     target.parent.mkdir(parents=True, exist_ok=True)
 
-    # 报告 HTML 写入临时文件后交给离屏页面加载
-    tmp_fd, tmp_name = tempfile.mkstemp(suffix=".html", prefix="calcstar_report_")
-    page: QWebEnginePage | None = None
-    try:
-        with os.fdopen(tmp_fd, "w", encoding="utf-8") as fh:
-            fh.write(build_report_html(detail))
+    printer = QPrinter(QPrinter.HighResolution)
+    printer.setOutputFormat(QPrinter.PdfFormat)
+    printer.setOutputFileName(str(target))
+    printer.setPageLayout(
+        QPageLayout(
+            QPageSize(QPageSize.A4),
+            QPageLayout.Portrait,
+            QMarginsF(12.0, 12.0, 12.0, 12.0),
+            QPageLayout.Millimeter,
+        )
+    )
 
-        loop = QEventLoop()
-        state = {"loaded": False, "printed": False}
+    doc = QTextDocument()
+    doc.setDefaultFont(QFont("Microsoft YaHei UI", 10))
+    doc.setHtml(build_report_html(detail))
+    doc.print_(printer)
 
-        def on_load_finished(ok: bool) -> None:
-            if not ok:
-                loop.quit()
-                return
-            state["loaded"] = True
-            layout = QPageLayout(
-                QPageSize(QPageSize.A4),
-                QPageLayout.Portrait,
-                QMarginsF(12, 12, 12, 12),
-            )
-            page.printToPdf(str(target), layout)
+    if not target.exists():
+        raise ReportExportError(f"PDF 生成失败：未找到输出文件 {target}")
+    return str(target)
 
-        def on_pdf_finished(_file_path: str, ok: bool) -> None:
-            state["printed"] = ok
-            loop.quit()
 
-        page = QWebEnginePage()
-        page.loadFinished.connect(on_load_finished)
-        page.pdfPrintingFinished.connect(on_pdf_finished)
-        # 兜底超时：渲染或打印卡死时唤醒事件循环，事后按 state 判定
-        QTimer.singleShot(_PRINT_TIMEOUT_MS, loop.quit)
-        page.load(QUrl.fromLocalFile(tmp_name))
+def build_default_filename(started_at: str = "") -> str:
+    """根据练习开始时间生成默认文件名。
 
-        loop.exec_()
+    Args:
+        started_at: ISO 时间串（如 ``2026-01-15T10:30:00``）。
 
-        if not state["loaded"]:
-            raise ReportExportError("成绩单页面加载失败，请重试")
-        if not state["printed"]:
-            raise ReportExportError("PDF 生成超时，请重试")
-        if not target.exists():
-            raise ReportExportError("PDF 文件未写入，请检查保存路径")
-        return str(target)
-    finally:
-        if page is not None:
-            page.deleteLater()
-        try:
-            os.remove(tmp_name)
-        except OSError:
-            pass
+    Returns:
+        形如 ``CalcStar成绩单_20260115-1030.pdf`` 的文件名；
+        时间信息不足时返回不含时间戳的默认名。
+    """
+    digits = "".join(ch for ch in str(started_at) if ch.isdigit())
+    if len(digits) >= 12:
+        return f"CalcStar成绩单_{digits[:8]}-{digits[8:12]}.pdf"
+    return "CalcStar成绩单.pdf"

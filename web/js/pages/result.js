@@ -410,6 +410,7 @@ CS.pages.result = (function () {
     exportingReport = true;
     els.exportBtn.disabled = true;
     els.exportLabel.textContent = "导出中…";
+    CS.mask.show("正在生成成绩单…");
 
     try {
       const res = await CS.api.callBridge("export_report_pdf", {
@@ -428,6 +429,7 @@ CS.pages.result = (function () {
       exportingReport = false;
       els.exportBtn.disabled = false;
       els.exportLabel.textContent = "导出成绩单";
+      CS.mask.hide();
     }
   }
 

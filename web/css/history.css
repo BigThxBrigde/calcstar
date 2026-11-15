@@ -435,6 +435,37 @@
   }
 }
 
+/* ---------- 行级导出按钮 ---------- */
+.his-export {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--line);
+  background: #FFF6E1;
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.his-export:hover {
+  border-color: var(--orange, #FF8A3D);
+  color: var(--orange, #FF8A3D);
+  background: #FFEFD9;
+}
+
+.his-export:active {
+  transform: translateY(1px);
+}
+
+.his-export.is-busy {
+  opacity: 0.55;
+  cursor: wait;
+}
+
 /* ---------- 清空历史 ---------- */
 .his-clear-row {
   display: flex;
