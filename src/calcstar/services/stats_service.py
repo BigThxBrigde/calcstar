@@ -13,6 +13,7 @@ from typing import Optional, Union
 from calcstar.config import get_db_path
 from calcstar.data.database import connect, init_db
 from calcstar.data.repositories import (
+    clear_history,
     get_session_detail,
     list_history,
     list_wrong_book,
@@ -66,6 +67,14 @@ class StatsService:
         if detail is None:
             raise SessionNotFoundError(f"练习会话不存在：session_id={session_id}")
         return detail
+
+    def clear_history(self) -> int:
+        """清空全部练习历史（会话与逐题明细），错题本保留。
+
+        Returns:
+            被删除的会话数量。
+        """
+        return clear_history(self._conn)
 
     def list_wrong_book(
         self,

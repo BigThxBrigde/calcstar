@@ -51,6 +51,8 @@ CS.pages.history = (function () {
   let listLoading = false;
   let detailLoading = false;
   let silentTimer = null;
+  let clearArmed = false; // 清空按钮二次确认状态
+  let clearTimer = null;
 
   function $(id) {
     return document.getElementById(id);
@@ -156,6 +158,9 @@ CS.pages.history = (function () {
       '    <span class="pager-info" id="history-pageinfo"></span>' +
       '    <button type="button" class="pager-btn" id="history-next">下一页 →</button>' +
       "  </div>" +
+      '  <div class="his-clear-row" id="history-clear-row">' +
+      '    <button type="button" class="his-clear-btn" id="history-clear">清空历史</button>' +
+      "  </div>" +
       "</div>" +
 
       // 明细视图（默认隐藏）
@@ -181,6 +186,9 @@ CS.pages.history = (function () {
     });
     $("history-detail-back").addEventListener("click", function () {
       showListView();
+    });
+    $("history-clear").addEventListener("click", function () {
+      clearHistory();
     });
   }
 
@@ -210,10 +218,12 @@ CS.pages.history = (function () {
         "  <p class=\"his-empty-tip\">快去首页开始第一次口算练习吧！</p>" +
         "</div>";
       els.pager.classList.add("hidden");
+      els.clearRow.classList.add("hidden");
       return;
     }
 
     els.pager.classList.remove("hidden");
+    els.clearRow.classList.remove("hidden");
     const rows = items.map(function (row) {
       const submitted = row.status === "submitted" || row.status === "passed";
       const score = submitted && row.score != null ? row.score + "分" : "—";
@@ -306,6 +316,47 @@ CS.pages.history = (function () {
       return;
     }
     loadPage(targetPage);
+  }
+
+  /* ---------------- 清空历史 ---------------- */
+
+  /** 退出二次确认状态 */
+  function disarmClear() {
+    clearArmed = false;
+    if (clearTimer) {
+      clearTimeout(clearTimer);
+      clearTimer = null;
+    }
+    els.clearBtn.textContent = "清空历史";
+    els.clearBtn.classList.remove("is-armed");
+  }
+
+  /** 两步确认后清空全部练习历史（错题本保留） */
+  async function clearHistory() {
+    if (!clearArmed) {
+      clearArmed = true;
+      els.clearBtn.textContent = "再点一次确认清空";
+      els.clearBtn.classList.add("is-armed");
+      if (clearTimer) {
+        clearTimeout(clearTimer);
+      }
+      clearTimer = setTimeout(disarmClear, 4000);
+      return;
+    }
+    disarmClear();
+
+    try {
+      const res = await CS.api.callBridge("clear_history", {});
+      CS.state.historyCache = null;
+      CS.state.historyCacheDirty = true;
+      CS.toast.success(
+        "已清空 " + (Number(res.deleted) || 0) + " 次练习记录，错题本保留"
+      );
+      page = 1;
+      loadPage(1);
+    } catch (err) {
+      CS.toast.error(err && err.message ? err.message : "清空历史失败，请重试");
+    }
   }
 
   /* ---------------- 明细 ---------------- */
@@ -422,6 +473,8 @@ CS.pages.history = (function () {
     els.pageinfo = $("history-pageinfo");
     els.prev = $("history-prev");
     els.next = $("history-next");
+    els.clearRow = $("history-clear-row");
+    els.clearBtn = $("history-clear");
     els.detailSummary = $("history-detail-summary");
     els.detailQuestions = $("history-detail-questions");
 

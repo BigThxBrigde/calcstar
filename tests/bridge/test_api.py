@@ -271,6 +271,38 @@ class TestExportReportPdf:
             b._stats._conn.close()
 
 
+class TestClearHistory:
+    def test_clear_returns_deleted_count(self, bridge, tmp_path):
+        """清空后 ok=True 且 data.deleted 等于会话数；历史变空。"""
+        data = _create(bridge)
+        bridge.submit_practice(json.dumps({
+            "session_id": data["session_id"],
+            "answers": {"0": 1},
+            "duration_seconds": 10,
+        }))
+        resp = json.loads(bridge.clear_history("{}"))
+        assert resp["ok"] is True
+        assert resp["data"]["deleted"] == 1
+        listing = json.loads(bridge.list_history(
+            json.dumps({"page": 1, "page_size": 10})
+        ))
+        assert listing["data"]["total"] == 0
+
+    def test_clear_keeps_wrong_book(self, bridge, tmp_path):
+        """清空历史后错题本数据保留。"""
+        data = _create(bridge)
+        bridge.submit_practice(json.dumps({
+            "session_id": data["session_id"],
+            "answers": {"0": 1},  # 答错聚合进错题本
+            "duration_seconds": 10,
+        }))
+        before = json.loads(bridge.list_wrong_book("{}"))
+        assert before["data"]
+        bridge.clear_history("{}")
+        after = json.loads(bridge.list_wrong_book("{}"))
+        assert after["data"] == before["data"]
+
+
 class TestFactory:
     def test_zero_arg_with_env_db(self, monkeypatch, tmp_path):
         """create_bridge() 零参调用兼容（CALCSTAR_DB 指向临时库）。"""

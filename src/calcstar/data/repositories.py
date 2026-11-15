@@ -396,3 +396,25 @@ def list_wrong_book(
     sql += f" ORDER BY {column} DESC, id DESC"
     rows = conn.execute(sql, params).fetchall()
     return [dict(r) for r in rows]
+
+
+def clear_history(conn: sqlite3.Connection) -> int:
+    """清空全部练习历史（sessions 及随会话级联的 questions 明细）。
+
+    错题本（wrong_book）为独立聚合表，不在清空范围内。
+
+    Args:
+        conn: 数据库连接。
+
+    Returns:
+        被删除的会话数量。
+    """
+    deleted = int(
+        conn.execute("SELECT COUNT(*) FROM sessions").fetchone()[0]
+    )
+    # questions 表对 sessions 有 ON DELETE CASCADE，但 SQLite 级联
+    # 依赖外键开关，显式删除更稳妥（幂等）。
+    conn.execute("DELETE FROM questions")
+    conn.execute("DELETE FROM sessions")
+    conn.commit()
+    return deleted

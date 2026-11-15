@@ -321,3 +321,33 @@ class TestQueries:
         rows = repositories.list_wrong_book(conn, category="sub")
         assert [r["expression"] for r in rows] == ["7-9"]
         assert repositories.list_wrong_book(conn, category="mul") == []
+
+
+class TestClearHistory:
+    def test_clear_removes_sessions_and_questions(self, conn):
+        """清空后 sessions/questions 为空，返回删除的会话数。"""
+        sid1, _ = _new_session(conn)
+        sid2, _ = _new_session(conn)
+        deleted = repositories.clear_history(conn)
+        assert deleted == 2
+        assert conn.execute("SELECT COUNT(*) FROM sessions").fetchone()[0] == 0
+        assert conn.execute("SELECT COUNT(*) FROM questions").fetchone()[0] == 0
+        assert repositories.get_session_detail(conn, sid1) is None
+        assert repositories.get_session_detail(conn, sid2) is None
+
+    def test_clear_keeps_wrong_book(self, conn):
+        """错题本为独立聚合表，清空历史不影响其数据。"""
+        session_id, questions = _new_session(conn)
+        # 答错第 2 题（7-9），经 submit_answers 聚合进 wrong_book
+        answers = {q["seq"]: q["answer"] for q in questions}
+        answers[1] = 100  # 答错
+        repositories.submit_answers(conn, session_id, answers,
+                                    _graded_for(questions, answers), 60.0)
+        assert len(repositories.list_wrong_book(conn)) == 1
+        repositories.clear_history(conn)
+        rows = repositories.list_wrong_book(conn)
+        assert [r["expression"] for r in rows] == ["7-9"]
+
+    def test_clear_empty_db(self, conn):
+        """空库清空：返回 0 且不报错。"""
+        assert repositories.clear_history(conn) == 0

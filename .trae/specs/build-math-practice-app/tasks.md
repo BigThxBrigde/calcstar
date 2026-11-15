@@ -77,6 +77,11 @@
   - [x] SubTask 11.5: 前端成绩页新增"导出成绩单"按钮（含导出中状态、成功/取消/失败 Toast，空状态隐藏）
   - [x] SubTask 11.6: 编写 `tests/services/test_report_service.py` 与 `tests/bridge` 导出用例；运行 `pytest` 全绿且覆盖率达标
 
+- [x] Task 12: 历史页清空历史
+  - [x] SubTask 12.1: `repositories.clear_history`（删 sessions/questions，保留错题本，返回删除会话数）+ `StatsService.clear_history` + `bridge/api.py` `clear_history` 槽
+  - [x] SubTask 12.2: 历史页列表底部"清空历史"按钮（4 秒二次确认，确认态红色脉冲动效；空列表隐藏），清空后 Toast 提示数量并刷新
+  - [x] SubTask 12.3: data 层与桥接层测试（删除计数、保留错题本、空库幂等）；spec/checklist 同步
+
 # Task Dependencies
 - Task 0 已完成
 - Task 1 最先执行（pyproject 与分层骨架是其余任务的基础）

@@ -147,6 +147,18 @@ class CalcStarBridge(QObject):
         return self._respond(run)
 
     @pyqtSlot(str, result=str)
+    def clear_history(self, payload: str) -> str:
+        """清空全部练习历史：payload 忽略；返回 {deleted: 会话数}。
+
+        仅删除会话与逐题明细，错题本（wrong_book）保留。
+        """
+        def run() -> dict:
+            self._parse_payload(payload)
+            return {"deleted": self._stats.clear_history()}
+
+        return self._respond(run)
+
+    @pyqtSlot(str, result=str)
     def list_wrong_book(self, payload: str) -> str:
         """查询错题本：payload 为 {category, order_by}（均可缺省）。"""
         def run() -> list[dict]:

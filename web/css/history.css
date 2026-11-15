@@ -434,3 +434,50 @@
     min-width: 720px;
   }
 }
+
+/* ---------- 清空历史 ---------- */
+.his-clear-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
+.his-clear-btn {
+  padding: 8px 20px;
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--line);
+  background: #FFF6E1;
+  color: var(--ink-soft);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.his-clear-btn:hover {
+  border-color: var(--red);
+  color: var(--red);
+  transform: translateY(-1px);
+}
+
+.his-clear-btn:active {
+  transform: translateY(1px);
+}
+
+.his-clear-btn.is-armed {
+  background: var(--red);
+  border-color: var(--red);
+  color: #fff;
+  animation: his-clear-pulse 1s ease infinite;
+}
+
+.his-clear-btn:focus-visible {
+  outline: 3px solid rgba(232, 93, 93, 0.4);
+  outline-offset: 2px;
+}
+
+@keyframes his-clear-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(232, 93, 93, 0.35); }
+  50% { box-shadow: 0 0 0 8px rgba(232, 93, 93, 0); }
+}
