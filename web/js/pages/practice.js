@@ -210,9 +210,21 @@ CS.pages.practice = (function () {
         ev.preventDefault();
         cancelAutoAdvance();
         jumpTo(index + 1, true);
+      } else if (ev.key === "Tab") {
+        // Tab/Shift+Tab 在题目输入框间前后移动，不跳出题目区
+        ev.preventDefault();
+        cancelAutoAdvance();
+        jumpTo(index + (ev.shiftKey ? -1 : 1), false);
       } else if (ev.key === "Backspace" && input.value === "" && index > 0) {
         ev.preventDefault();
         focusInput(index - 1);
+      }
+    });
+
+    // 点击卡片任意位置都聚焦该题输入框（点输入框本身时保持光标位置）
+    card.addEventListener("click", function (ev) {
+      if (ev.target !== input) {
+        focusInput(index);
       }
     });
 
@@ -236,6 +248,9 @@ CS.pages.practice = (function () {
 
   /** 跳到当前页第 index 个输入；越页则翻页并聚焦首页输入；整卷末尾按需聚焦提交按钮 */
   function jumpTo(index, focusSubmitAtEnd) {
+    if (index < 0) {
+      return;
+    }
     if (index < pageInputs.length) {
       focusInput(index);
       return;
