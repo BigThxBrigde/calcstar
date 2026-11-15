@@ -16,6 +16,7 @@ from typing import Callable, Optional, Union
 from PyQt5.QtCore import QObject, pyqtSlot
 
 from calcstar.services.practice_service import PracticeService
+from calcstar.services.settings_service import SettingsService
 from calcstar.services.stats_service import StatsService
 
 _DBPath = Union[str, Path]
@@ -34,6 +35,7 @@ class CalcStarBridge(QObject):
         self,
         practice_service: Optional[PracticeService] = None,
         stats_service: Optional[StatsService] = None,
+        settings_service: Optional[SettingsService] = None,
         report_exporter: Optional[_ReportExporter] = None,
         parent: Optional[QObject] = None,
     ) -> None:
@@ -42,6 +44,7 @@ class CalcStarBridge(QObject):
         Args:
             practice_service: 练习服务实例；None 时按默认数据库路径创建。
             stats_service: 统计服务实例；None 时按默认数据库路径创建。
+            settings_service: 设置服务实例；None 时使用默认设置文件路径。
             report_exporter: 成绩单 PDF 导出器（desktop 层注入）；None 时
                 导出接口返回"不支持"错误。
             parent: Qt 父对象。
@@ -51,6 +54,9 @@ class CalcStarBridge(QObject):
             practice_service if practice_service is not None else PracticeService()
         )
         self._stats = stats_service if stats_service is not None else StatsService()
+        self._settings = (
+            settings_service if settings_service is not None else SettingsService()
+        )
         self._report_exporter = report_exporter
 
     # ---- 内部工具 ----
@@ -170,6 +176,27 @@ class CalcStarBridge(QObject):
 
         return self._respond(run)
 
+    # ---- 设置持久化 ----
+
+    @pyqtSlot(str, result=str)
+    def get_settings(self, payload: str) -> str:
+        """读取持久化设置：payload 忽略；无历史设置时返回空对象。"""
+        def run() -> dict:
+            self._parse_payload(payload)
+            return self._settings.load()
+
+        return self._respond(run)
+
+    @pyqtSlot(str, result=str)
+    def save_settings(self, payload: str) -> str:
+        """保存设置页参数：payload 为设置字典（未知字段被忽略）。"""
+        def run() -> dict:
+            data = self._parse_payload(payload)
+            self._settings.save(data)
+            return {"saved": True}
+
+        return self._respond(run)
+
     # ---- 成绩单导出 ----
 
     @pyqtSlot(str, result=str)
@@ -196,6 +223,7 @@ class CalcStarBridge(QObject):
 
 def create_bridge(
     db_path: Optional[_DBPath] = None,
+    settings_service: Optional[SettingsService] = None,
     report_exporter: Optional[_ReportExporter] = None,
 ) -> CalcStarBridge:
     """桥接对象工厂：创建并返回 :class:`CalcStarBridge`。
@@ -206,10 +234,12 @@ def create_bridge(
 
     Args:
         db_path: 数据库文件路径；None 时使用 config.get_db_path()。
+        settings_service: 设置服务实例；None 时使用默认设置文件路径。
         report_exporter: 成绩单 PDF 导出器（desktop 层注入）。
     """
     return CalcStarBridge(
         practice_service=PracticeService(db_path),
         stats_service=StatsService(db_path),
+        settings_service=settings_service,
         report_exporter=report_exporter,
     )
