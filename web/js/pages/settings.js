@@ -141,6 +141,93 @@ CS.pages.settings = (function () {
     els.rowParentheses.classList.toggle("is-disabled", !isMixed);
   }
 
+  /* ---------- 设置持久化 ---------- */
+
+  /** 选中指定单选组并触发 change（驱动自定义输入框显隐等联动） */
+  function setRadio(name, value) {
+    const input = document.querySelector(
+      'input[name="' + name + '"][value="' + value + '"]'
+    );
+    if (input) {
+      input.checked = true;
+      input.dispatchEvent(new Event("change"));
+    }
+  }
+
+  /** 回填「预设 + 自定义」组：值命中预设选预设，否则走自定义输入框 */
+  function applyPresetOrCustom(name, inputId, value) {
+    if (value === null || value === undefined || value === "") {
+      return;
+    }
+    const preset = document.querySelector(
+      'input[name="' + name + '"][value="' + value + '"]'
+    );
+    if (preset) {
+      preset.checked = true;
+      preset.dispatchEvent(new Event("change"));
+    } else {
+      setRadio(name, "custom");
+      $(inputId).value = String(value);
+    }
+  }
+
+  /** 用持久化的设置回填表单（启动后调用一次） */
+  function applySettings(saved) {
+    if (!saved || typeof saved !== "object") {
+      return;
+    }
+    if (saved.category) {
+      setRadio("category", saved.category);
+    }
+    applyPresetOrCustom("range", "custom-range", saved.range_n);
+    applyPresetOrCustom("count", "custom-count", saved.count);
+    if ("duration_minutes" in saved) {
+      if (saved.duration_minutes === null || saved.duration_minutes === undefined) {
+        setRadio("duration", "none");
+      } else {
+        applyPresetOrCustom("duration", "custom-duration", saved.duration_minutes);
+      }
+    }
+    if (typeof saved.allow_negative === "boolean") {
+      els.allowNegative.checked = saved.allow_negative;
+    }
+    if (typeof saved.include_parentheses === "boolean") {
+      els.parentheses.checked = saved.include_parentheses;
+    }
+    if (saved.per_page !== null && saved.per_page !== undefined) {
+      setRadio("per-page", String(saved.per_page));
+    }
+    if (saved.operand_count !== null && saved.operand_count !== undefined) {
+      setRadio(
+        "operand-count",
+        saved.operand_count === "random" ? "random" : String(saved.operand_count)
+      );
+    }
+    if (saved.blank_position) {
+      setRadio("blank-position", saved.blank_position);
+    }
+    updateParenthesesState();
+  }
+
+  /** 加载持久化设置并回填（失败静默，使用页面默认值） */
+  async function loadSavedSettings() {
+    try {
+      const saved = await CS.api.callBridge("get_settings", {});
+      applySettings(saved);
+    } catch (err) {
+      /* 读取失败不阻塞使用，保持默认值 */
+    }
+  }
+
+  /** 持久化当前设置（失败静默，不打断出题流程） */
+  async function persistSettings(config) {
+    try {
+      await CS.api.callBridge("save_settings", config);
+    } catch (err) {
+      /* 保存失败仅影响下次启动的默认值 */
+    }
+  }
+
   /** 开始练习：校验 → create_practice → 存 state → 跳练习页 */
   async function startPractice() {
     if (starting) {
@@ -152,6 +239,7 @@ CS.pages.settings = (function () {
       CS.toast.error(collected.message);
       return;
     }
+    persistSettings(collected.config);
 
     starting = true;
     els.startBtn.disabled = true;
@@ -200,6 +288,9 @@ CS.pages.settings = (function () {
     wireCustomGroup("duration", "row-custom-duration", "custom-duration");
 
     els.startBtn.addEventListener("click", startPractice);
+
+    // 启动时恢复上次保存的设置（缺席/失败时使用页面默认值）
+    loadSavedSettings();
 
     // 提前连接桥接，缺席时给出明确提示（普通浏览器打开页面时）
     CS.api.ready().catch(function (err) {

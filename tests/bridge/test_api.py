@@ -5,12 +5,16 @@ import json
 import pytest
 
 from calcstar.bridge.api import create_bridge
+from calcstar.services.settings_service import SettingsService
 
 
 @pytest.fixture()
 def bridge(tmp_path):
-    """每个用例使用独立的临时数据库（桥内两个服务共享同一路径）。"""
-    b = create_bridge(tmp_path / "calcstar.db")
+    """每个用例使用独立的临时数据库与设置文件（服务全部隔离）。"""
+    b = create_bridge(
+        tmp_path / "calcstar.db",
+        settings_service=SettingsService(tmp_path / "settings.json"),
+    )
     yield b
     b._practice._conn.close()
     b._stats._conn.close()
@@ -301,6 +305,40 @@ class TestClearHistory:
         bridge.clear_history("{}")
         after = json.loads(bridge.list_wrong_book("{}"))
         assert after["data"] == before["data"]
+
+
+class TestSettingsPersistence:
+    def test_get_settings_initially_empty(self, bridge):
+        """首次读取：ok=True 且 data 为空对象。"""
+        resp = json.loads(bridge.get_settings("{}"))
+        assert resp["ok"] is True
+        assert resp["data"] == {}
+
+    def test_save_then_get_roundtrip(self, bridge):
+        """保存后读取，设置完整还原。"""
+        settings = {
+            "category": "mul_div",
+            "range_n": 50,
+            "count": 100,
+            "duration_minutes": 10,
+            "allow_negative": True,
+            "include_parentheses": False,
+            "per_page": 20,
+            "operand_count": "random",
+            "blank_position": "any",
+        }
+        resp = json.loads(bridge.save_settings(json.dumps(settings)))
+        assert resp["ok"] is True
+        assert resp["data"]["saved"] is True
+        loaded = json.loads(bridge.get_settings("{}"))
+        assert loaded["ok"] is True
+        assert loaded["data"] == settings
+
+    def test_save_ignores_unknown_keys(self, bridge):
+        """未知字段不持久化。"""
+        bridge.save_settings(json.dumps({"category": "add", "evil": 1}))
+        loaded = json.loads(bridge.get_settings("{}"))
+        assert loaded["data"] == {"category": "add"}
 
 
 class TestFactory:

@@ -137,28 +137,32 @@
           <svg class="ticon" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z"/></svg>
           更多选项
         </h2>
-        <div class="more-row">
-          <div class="more-item">
+        <div class="option-row">
+          <div class="option-text">
             <span class="option-name">允许负数</span>
-            <label class="switch" aria-label="允许负数" title="开启后减法可能出现负数结果">
-              <input type="checkbox" id="allow-negative">
-              <span class="track"></span>
-            </label>
+            <span class="option-hint">开启后减法可能出现负数结果</span>
           </div>
-          <div class="more-item is-disabled" id="row-parentheses">
+          <label class="switch" aria-label="允许负数">
+            <input type="checkbox" id="allow-negative">
+            <span class="track"></span>
+          </label>
+        </div>
+        <div class="option-row is-disabled" id="row-parentheses">
+          <div class="option-text">
             <span class="option-name">包含括号</span>
-            <label class="switch" aria-label="包含括号" title="仅四则混合运算可用">
-              <input type="checkbox" id="with-parentheses" disabled>
-              <span class="track"></span>
-            </label>
+            <span class="option-hint">仅四则混合运算可用</span>
           </div>
-          <div class="more-item">
-            <span class="option-name">每页题数</span>
-            <div class="chip-group" role="radiogroup" aria-label="每页题数">
-              <label class="chip"><input type="radio" name="per-page" value="5"><span>5 题</span></label>
-              <label class="chip"><input type="radio" name="per-page" value="10" checked><span>10 题</span></label>
-              <label class="chip"><input type="radio" name="per-page" value="20"><span>20 题</span></label>
-            </div>
+          <label class="switch" aria-label="包含括号">
+            <input type="checkbox" id="with-parentheses" disabled>
+            <span class="track"></span>
+          </label>
+        </div>
+        <div class="option-row option-column">
+          <span class="option-name">每页题数</span>
+          <div class="chip-group" role="radiogroup" aria-label="每页题数">
+            <label class="chip"><input type="radio" name="per-page" value="5"><span>5 题</span></label>
+            <label class="chip"><input type="radio" name="per-page" value="10" checked><span>10 题</span></label>
+            <label class="chip"><input type="radio" name="per-page" value="20"><span>20 题</span></label>
           </div>
         </div>
       </div>
@@ -647,6 +651,7 @@ if (typeof module === 'object') {
 <script src="js/state.js"></script>
 <script src="js/api.js"></script>
 <script src="js/toast.js"></script>
+<script src="js/mask.js"></script>
 <script src="js/router.js"></script>
 <script src="js/pages/settings.js"></script>
 <script src="js/pages/practice.js"></script>
