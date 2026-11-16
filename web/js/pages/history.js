@@ -151,7 +151,7 @@ CS.pages.history = (function () {
       "  </h2>" +
       '  <div class="his-columns" aria-hidden="true">' +
       '    <span>日期时间</span><span>类别</span><span>范围</span><span>题量</span>' +
-      "    <span>得分</span><span>正确率</span><span>用时</span><span>状态</span>" +
+      "    <span>得分</span><span>正确率</span><span>用时</span><span>状态</span><span>操作</span>" +
       "  </div>" +
       '  <div id="history-list" role="list"></div>' +
       '  <div class="his-pager" id="history-pager">' +
