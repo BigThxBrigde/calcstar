@@ -26,6 +26,8 @@ def create_session(
     include_parentheses: bool,
     per_page: int,
     started_at: Optional[str] = None,
+    blank_position: str = "last",
+    operand_count: int = 0,
 ) -> int:
     """创建一局练习会话，返回会话 id。
 
@@ -38,7 +40,10 @@ def create_session(
         allow_negative: 是否允许负数中间结果；
         include_parentheses: 是否包含括号；
         per_page: 每页题数；
-        started_at: 开始时间（ISO 文本），缺省取当前时间。
+        started_at: 开始时间（ISO 文本），缺省取当前时间；
+        blank_position: 填空位置（"last"|"any"），供重做复现；
+        operand_count: 算式目数（0 表示默认两目，2/3/-1 见 domain 常量），
+            供重做复现。
 
     Returns:
         新会话的 session_id（自增主键）。
@@ -47,8 +52,9 @@ def create_session(
         """
         INSERT INTO sessions (
             category, range_n, count, duration_minutes,
-            allow_negative, include_parentheses, per_page, started_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            allow_negative, include_parentheses, per_page, started_at,
+            blank_position, operand_count
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             category,
@@ -59,6 +65,8 @@ def create_session(
             int(bool(include_parentheses)),
             per_page,
             started_at if started_at is not None else _now(),
+            blank_position,
+            int(operand_count),
         ),
     )
     conn.commit()
@@ -418,3 +426,21 @@ def clear_history(conn: sqlite3.Connection) -> int:
     conn.execute("DELETE FROM sessions")
     conn.commit()
     return deleted
+
+
+def delete_session(conn: sqlite3.Connection, session_id: int) -> bool:
+    """删除单条练习会话及其逐题明细（错题本保留）。
+
+    Args:
+        conn: 数据库连接；
+        session_id: 会话 id。
+
+    Returns:
+        会话存在且已删除返回 True；会话不存在返回 False（幂等）。
+    """
+    cur = conn.execute("DELETE FROM sessions WHERE id = ?", (session_id,))
+    conn.execute(
+        "DELETE FROM questions WHERE session_id = ?", (session_id,)
+    )
+    conn.commit()
+    return cur.rowcount > 0

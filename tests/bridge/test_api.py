@@ -307,6 +307,67 @@ class TestClearHistory:
         assert after["data"] == before["data"]
 
 
+class TestDeleteSession:
+    def test_delete_ok_and_history_shrinks(self, bridge, tmp_path):
+        """删除单条会话：ok=True 且 deleted=true，列表总数减一。"""
+        data1 = _create(bridge)
+        data2 = _create(bridge)
+        resp = json.loads(bridge.delete_session(
+            json.dumps({"session_id": data1["session_id"]})
+        ))
+        assert resp["ok"] is True
+        assert resp["data"]["deleted"] is True
+        listing = json.loads(bridge.list_history(
+            json.dumps({"page": 1, "page_size": 10})
+        ))
+        assert listing["data"]["total"] == 1
+        detail = json.loads(bridge.get_session_detail(
+            json.dumps({"session_id": data2["session_id"]})
+        ))
+        assert detail["ok"] is True
+
+    def test_delete_missing_session_returns_error(self, bridge):
+        """会话不存在：ok=False。"""
+        resp = json.loads(bridge.delete_session(
+            json.dumps({"session_id": 424242})
+        ))
+        assert resp["ok"] is False
+
+    def test_redo_reproduces_form_params(self, bridge):
+        """重做链路：detail 携带 blank_position/operand_count，
+        以原参数重建练习得到全新会话。"""
+        data = json.loads(bridge.create_practice(json.dumps({
+            "category": "add_sub",
+            "range_n": 20,
+            "count": 6,
+            "duration_minutes": None,
+            "allow_negative": False,
+            "include_parentheses": False,
+            "per_page": 6,
+            "blank_position": "any",
+            "operand_count": 3,
+        })))
+        sid = data["data"]["session_id"]
+        detail = json.loads(bridge.get_session_detail(
+            json.dumps({"session_id": sid})
+        ))["data"]
+        assert detail["blank_position"] == "any"
+        assert detail["operand_count"] == 3
+        redo = json.loads(bridge.create_practice(json.dumps({
+            "category": detail["category"],
+            "range_n": detail["range_n"],
+            "count": detail["count"],
+            "duration_minutes": detail["duration_minutes"],
+            "allow_negative": bool(detail["allow_negative"]),
+            "include_parentheses": bool(detail["include_parentheses"]),
+            "per_page": detail["per_page"],
+            "blank_position": detail["blank_position"],
+            "operand_count": detail["operand_count"],
+        })))
+        assert redo["ok"] is True
+        assert redo["data"]["session_id"] != sid
+
+
 class TestSettingsPersistence:
     def test_get_settings_initially_empty(self, bridge):
         """首次读取：ok=True 且 data 为空对象。"""

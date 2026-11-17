@@ -156,6 +156,8 @@ class PracticeService:
             allow_negative=allow_negative,
             include_parentheses=include_parentheses,
             per_page=per_page,
+            blank_position=blank_position,
+            operand_count=operand_count,
         )
         save_questions(self._conn, session_id, question_rows)
 

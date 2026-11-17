@@ -14,6 +14,7 @@ from calcstar.config import get_db_path
 from calcstar.data.database import connect, init_db
 from calcstar.data.repositories import (
     clear_history,
+    delete_session,
     get_session_detail,
     list_history,
     list_wrong_book,
@@ -75,6 +76,22 @@ class StatsService:
             被删除的会话数量。
         """
         return clear_history(self._conn)
+
+    def delete_session(self, session_id: int) -> bool:
+        """删除单条练习会话及其逐题明细，错题本保留。
+
+        Args:
+            session_id: 会话 id。
+
+        Returns:
+            删除成功返回 True。
+
+        Raises:
+            SessionNotFoundError: 会话不存在。
+        """
+        if not delete_session(self._conn, session_id):
+            raise SessionNotFoundError(f"练习会话不存在：session_id={session_id}")
+        return True
 
     def list_wrong_book(
         self,

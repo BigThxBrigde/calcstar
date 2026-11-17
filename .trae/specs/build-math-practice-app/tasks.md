@@ -109,6 +109,11 @@
   - [x] SubTask 17.2: style/history/practice/result/wrongbook 五个 CSS 全部 flex gap 改为 margin 方案（换行容器用负 margin 补偿对齐，单向行用 `> * + *` margin，纵向列用 margin-top），grid gap（83 支持）保留
   - [x] SubTask 17.3: `inset: 0` 简写（87+ 才支持）替换为显式 left/top/right/bottom；以应用同款引擎实测验证：chip 水平/垂直间距 12px、对齐正常
 
+- [x] Task 18: 历史列表操作列扩展（行级重做与删除）
+  - [x] SubTask 18.1: sessions 表幂等迁移新增 blank_position/operand_count 两列（PRAGMA table_info 检查 + ALTER TABLE），create_session/create_practice 持久化算式形式参数，供重做保真复现
+  - [x] SubTask 18.2: data/services/bridge 新增 delete_session（删除单条会话与明细、保留错题本、不存在报错、幂等），测试覆盖
+  - [x] SubTask 18.3: 操作列"导出/重做/删除"三个按钮同行排布（窄屏自动换列）；重做读取会话原配置重建练习（含算式形式），删除 4 秒两步确认且多行互斥；测试新增 8 例
+
 # Task Dependencies
 - Task 0 已完成
 - Task 1 最先执行（pyproject 与分层骨架是其余任务的基础）
@@ -126,3 +131,4 @@
 - Task 14 依赖 Task 5（设置页就绪）：14.1 独立；14.2 先行，14.3 依赖 14.2，14.4 收尾
 - Task 15 依赖 Task 11（导出链路已存在）：15.1/15.2 先行，15.3 依赖 15.1/15.2，15.4 收尾
 - Task 16 依赖 Task 6（做题页就绪）
+- Task 18 依赖 Task 8/9（历史页与数据层就绪）：18.1 先行（重做保真依赖会话落库算式形式），18.2 独立可并行，18.3 依赖 18.1/18.2

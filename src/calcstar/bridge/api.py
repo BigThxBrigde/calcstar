@@ -165,6 +165,19 @@ class CalcStarBridge(QObject):
         return self._respond(run)
 
     @pyqtSlot(str, result=str)
+    def delete_session(self, payload: str) -> str:
+        """删除单条练习会话：payload 为 {session_id}；返回 {deleted: true}。
+
+        仅删除该会话与逐题明细，错题本保留；会话不存在返回 ok=False。
+        """
+        def run() -> dict:
+            data = self._parse_payload(payload)
+            self._stats.delete_session(int(data["session_id"]))
+            return {"deleted": True}
+
+        return self._respond(run)
+
+    @pyqtSlot(str, result=str)
     def list_wrong_book(self, payload: str) -> str:
         """查询错题本：payload 为 {category, order_by}（均可缺省）。"""
         def run() -> list[dict]:

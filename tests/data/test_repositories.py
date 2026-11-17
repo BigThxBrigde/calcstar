@@ -351,3 +351,84 @@ class TestClearHistory:
     def test_clear_empty_db(self, conn):
         """空库清空：返回 0 且不报错。"""
         assert repositories.clear_history(conn) == 0
+
+
+class TestDeleteSession:
+    def test_delete_removes_session_and_questions(self, conn):
+        """删除单条会话后其明细一并清除，其余会话不受影响。"""
+        sid_keep, _ = _new_session(conn)
+        sid_del, _ = _new_session(conn)
+        assert repositories.delete_session(conn, sid_del) is True
+        assert repositories.get_session_detail(conn, sid_del) is None
+        kept = repositories.get_session_detail(conn, sid_keep)
+        assert kept is not None and len(kept["questions"]) == 5
+        assert conn.execute("SELECT COUNT(*) FROM sessions").fetchone()[0] == 1
+
+    def test_delete_keeps_wrong_book(self, conn):
+        """删除会话不影响错题本聚合数据。"""
+        session_id, questions = _new_session(conn)
+        answers = {q["seq"]: q["answer"] for q in questions}
+        answers[1] = 100  # 答错
+        repositories.submit_answers(conn, session_id, answers,
+                                    _graded_for(questions, answers), 60.0)
+        repositories.delete_session(conn, session_id)
+        assert [r["expression"] for r in repositories.list_wrong_book(conn)] == ["7-9"]
+
+    def test_delete_missing_session(self, conn):
+        """会话不存在时返回 False（幂等）。"""
+        assert repositories.delete_session(conn, 9999) is False
+
+
+class TestSessionFormColumns:
+    def test_create_session_stores_form_params(self, conn):
+        """create_session 持久化 blank_position/operand_count。"""
+        sid, _ = _new_session(
+            conn, blank_position="any", operand_count=3
+        )
+        detail = repositories.get_session_detail(conn, sid)
+        assert detail["blank_position"] == "any"
+        assert detail["operand_count"] == 3
+
+    def test_migration_adds_columns_to_legacy_db(self, tmp_path):
+        """旧库（无新列）经 init_db 幂等迁移补齐，历史行取默认值。"""
+        c = connect(tmp_path / "legacy.db")
+        # 手工建一张旧结构 sessions 表
+        c.execute(
+            """
+            CREATE TABLE sessions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                category TEXT NOT NULL,
+                range_n INTEGER NOT NULL,
+                count INTEGER NOT NULL,
+                duration_minutes INTEGER,
+                allow_negative INTEGER NOT NULL,
+                include_parentheses INTEGER NOT NULL,
+                per_page INTEGER NOT NULL,
+                started_at TEXT NOT NULL,
+                finished_at TEXT,
+                duration_seconds REAL,
+                correct_count INTEGER,
+                total_count INTEGER,
+                score INTEGER,
+                correction_round INTEGER NOT NULL DEFAULT 0,
+                status TEXT NOT NULL DEFAULT 'in_progress',
+                passed INTEGER NOT NULL DEFAULT 0
+            )
+            """
+        )
+        c.execute(
+            "INSERT INTO sessions (category, range_n, count, allow_negative,"
+            " include_parentheses, per_page, started_at)"
+            " VALUES ('mixed', 20, 5, 0, 0, 5, '2026-01-01T00:00:00')"
+        )
+        c.commit()
+        init_db(c)  # 迁移
+        cols = {
+            r["name"] for r in c.execute("PRAGMA table_info(sessions)").fetchall()
+        }
+        assert {"blank_position", "operand_count"} <= cols
+        row = c.execute("SELECT blank_position, operand_count FROM sessions").fetchone()
+        assert row["blank_position"] == "last"
+        assert row["operand_count"] == 0
+        init_db(c)  # 再次调用幂等
+        c.close()

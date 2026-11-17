@@ -52,6 +52,10 @@ CS.pages.history = (function () {
   let detailLoading = false;
   let silentTimer = null;
   let clearArmed = false; // 清空按钮二次确认状态
+  let rowRedoing = false;   // 行级重做进行中（防并发）
+  let rowDeleting = false;  // 行级删除进行中（防并发）
+  let deleteArmedSpan = null; // 删除二次确认中的按钮
+  let deleteTimer = null;     // 删除确认自动复位延时器
   let clearTimer = null;
   let rowExporting = false; // 行级成绩单导出进行中（防并发）
 
@@ -240,7 +244,11 @@ CS.pages.history = (function () {
         '  <span class="his-cell">' + esc(formatAccuracy(row.correct_count, row.total_count)) + "</span>" +
         '  <span class="his-cell">' + esc(formatDuration(row.duration_seconds)) + "</span>" +
         '  <span class="his-cell">' + badgeHtml(row) + "</span>" +
-        '  <span class="his-cell"><span class="his-export" role="button" data-export-id="' + Number(row.id) + '" title="导出本次成绩单 PDF">导出</span></span>' +
+        '  <span class="his-cell"><span class="his-actions">' +
+        '<span class="his-act" role="button" data-act="export" data-session-id="' + Number(row.id) + '" title="导出本次成绩单 PDF">导出</span>' +
+        '<span class="his-act his-act-redo" role="button" data-act="redo" data-session-id="' + Number(row.id) + '" title="按本次的设置重新生成一局练习">重做</span>' +
+        '<span class="his-act his-act-del" role="button" data-act="del" data-session-id="' + Number(row.id) + '" title="删除这条练习记录（错题本保留）">删除</span>' +
+        "</span></span>" +
         "</button>"
       );
     });
@@ -256,10 +264,18 @@ CS.pages.history = (function () {
       });
     });
 
-    els.list.querySelectorAll(".his-export").forEach(function (span) {
+    els.list.querySelectorAll(".his-act").forEach(function (span) {
       span.addEventListener("click", function (ev) {
         ev.stopPropagation();
-        exportRow(Number(span.dataset.exportId), span);
+        const act = span.dataset.act;
+        const sessionId = Number(span.dataset.sessionId);
+        if (act === "export") {
+          exportRow(sessionId, span);
+        } else if (act === "redo") {
+          redoRow(sessionId, span);
+        } else if (act === "del") {
+          deleteRow(sessionId, span);
+        }
       });
     });
   }
@@ -359,6 +375,106 @@ CS.pages.history = (function () {
       span.classList.remove("is-busy");
       rowExporting = false;
       CS.mask.hide();
+    }
+  }
+
+  /* ---------------- 行级重做 ---------------- */
+
+  /** 按某次练习的原设置重新生成一局（含算式形式参数，与当次完全一致） */
+  async function redoRow(sessionId, span) {
+    if (rowRedoing) {
+      return;
+    }
+    rowRedoing = true;
+    const original = span.textContent;
+    span.textContent = "生成中…";
+    span.classList.add("is-busy");
+    try {
+      // 先取该会话的完整配置，再按原参数重新出题（全新的会话与题目）
+      const detail = await CS.api.callBridge("get_session_detail", {
+        session_id: sessionId,
+      });
+      const config = {
+        category: detail.category,
+        range_n: Number(detail.range_n),
+        count: Number(detail.count),
+        duration_minutes:
+          detail.duration_minutes == null
+            ? null
+            : Number(detail.duration_minutes),
+        allow_negative: Number(detail.allow_negative) === 1,
+        include_parentheses: Number(detail.include_parentheses) === 1,
+        per_page: Number(detail.per_page),
+        blank_position: detail.blank_position || "last",
+        operand_count: Number(detail.operand_count) || 0,
+      };
+      const data = await CS.api.callBridge("create_practice", config);
+      CS.state.currentSession = data;
+      CS.state.config = config;
+      CS.state.answers = {};
+      CS.state.startedAt = Date.now();
+      CS.router.showPage("page-practice");
+      CS.toast.success("已按原设置生成新练习，加油哦！");
+    } catch (err) {
+      CS.toast.error(
+        err && err.message ? err.message : "重做失败，请重试"
+      );
+    } finally {
+      span.textContent = original;
+      span.classList.remove("is-busy");
+      rowRedoing = false;
+    }
+  }
+
+  /* ---------------- 行级删除 ---------------- */
+
+  /** 退出某行的删除二次确认状态 */
+  function disarmRowDelete(span) {
+    if (deleteArmedSpan === span) {
+      deleteArmedSpan = null;
+    }
+    if (deleteTimer) {
+      clearTimeout(deleteTimer);
+      deleteTimer = null;
+    }
+    span.textContent = "删除";
+    span.classList.remove("is-armed");
+  }
+
+  /** 两步确认后删除单条练习记录（错题本保留）；4 秒未确认自动复位 */
+  async function deleteRow(sessionId, span) {
+    if (rowDeleting) {
+      return;
+    }
+    if (deleteArmedSpan && deleteArmedSpan !== span) {
+      disarmRowDelete(deleteArmedSpan);
+    }
+    if (deleteArmedSpan !== span) {
+      deleteArmedSpan = span;
+      span.textContent = "确认删除";
+      span.classList.add("is-armed");
+      if (deleteTimer) {
+        clearTimeout(deleteTimer);
+      }
+      deleteTimer = setTimeout(function () {
+        disarmRowDelete(span);
+      }, 4000);
+      return;
+    }
+
+    rowDeleting = true;
+    disarmRowDelete(span);
+    try {
+      await CS.api.callBridge("delete_session", { session_id: sessionId });
+      CS.toast.success("已删除该次练习记录，错题本保留");
+      if (CS.state.historyCache) {
+        CS.state.historyCacheDirty = true;
+      }
+      await loadPage(page, { silent: false });
+    } catch (err) {
+      CS.toast.error(err && err.message ? err.message : "删除失败，请重试");
+    } finally {
+      rowDeleting = false;
     }
   }
 

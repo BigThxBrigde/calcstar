@@ -94,7 +94,7 @@
   grid-template-columns:
     minmax(140px, 1.5fr) minmax(84px, 0.9fr) minmax(72px, 0.8fr)
     minmax(64px, 0.7fr) minmax(64px, 0.7fr) minmax(72px, 0.8fr)
-    minmax(84px, 0.9fr) minmax(88px, 1fr) minmax(76px, 0.9fr);
+    minmax(84px, 0.9fr) minmax(88px, 1fr) minmax(196px, 1.8fr);
   align-items: center;
   gap: 8px;
 }
@@ -464,7 +464,14 @@
 }
 
 /* ---------- 行级导出按钮 ---------- */
-.his-export {
+.his-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.his-act {
   display: inline-block;
   padding: 3px 10px;
   border-radius: var(--radius-pill);
@@ -479,19 +486,45 @@
   user-select: none;
 }
 
-.his-export:hover {
+.his-act:active {
+  transform: translateY(1px);
+}
+
+.his-act.is-busy {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.his-act:hover {
   border-color: var(--orange, #FF8A3D);
   color: var(--orange, #FF8A3D);
   background: #FFEFD9;
 }
 
-.his-export:active {
-  transform: translateY(1px);
+.his-act-redo:hover {
+  border-color: #3E9BFF;
+  color: #3E9BFF;
+  background: #E8F3FF;
 }
 
-.his-export.is-busy {
-  opacity: 0.55;
-  cursor: wait;
+.his-act-del {
+  color: #E05B5B;
+}
+
+.his-act-del:hover,
+.his-act-del.is-armed {
+  border-color: #E05B5B;
+  color: #FFF;
+  background: #E05B5B;
+}
+
+.his-act-del.is-armed {
+  animation: his-armed-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes his-armed-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(224, 91, 91, 0.35); }
+  50% { box-shadow: 0 0 0 5px rgba(224, 91, 91, 0.12); }
 }
 
 /* ---------- 清空历史 ---------- */

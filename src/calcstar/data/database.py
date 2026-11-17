@@ -34,6 +34,25 @@ def connect(db_path: _DBPath) -> sqlite3.Connection:
     return conn
 
 
+def _ensure_column(
+    conn: sqlite3.Connection, table: str, column: str, ddl: str
+) -> None:
+    """为已有表幂等补齐缺失列（旧库迁移）。
+
+    Args:
+        conn: 数据库连接；
+        table: 表名；
+        column: 列名；
+        ddl: ``ALTER TABLE`` 使用的列定义（含默认值）。
+    """
+    cols = {
+        row["name"]
+        for row in conn.execute(f"PRAGMA table_info({table})").fetchall()
+    }
+    if column not in cols:
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {ddl}")
+
+
 def init_db(conn: sqlite3.Connection) -> None:
     """初始化数据库表结构（幂等，可重复调用）。
 
@@ -48,6 +67,8 @@ def init_db(conn: sqlite3.Connection) -> None:
     - count: 本局出题数量；
     - duration_minutes: 限时分钟数，NULL 表示不限时；
     - allow_negative / include_parentheses / per_page: 练习选项；
+    - blank_position / operand_count: 算式形式（填空位置与算式目数，
+      后增列，旧库经幂等迁移补齐，历史行为默认值）；
     - started_at: 开始时间（ISO 格式文本）；
     - finished_at / duration_seconds / correct_count / total_count /
       score: 提交后写入的作答统计，score 为百分制；
@@ -113,6 +134,8 @@ def init_db(conn: sqlite3.Connection) -> None:
             allow_negative INTEGER NOT NULL,
             include_parentheses INTEGER NOT NULL,
             per_page INTEGER NOT NULL,
+            blank_position TEXT NOT NULL DEFAULT 'last',
+            operand_count INTEGER NOT NULL DEFAULT 0,
             started_at TEXT NOT NULL,
             finished_at TEXT,
             duration_seconds REAL,
@@ -124,5 +147,12 @@ def init_db(conn: sqlite3.Connection) -> None:
             passed INTEGER NOT NULL DEFAULT 0
         )
         """
+    )
+    # 旧库幂等迁移：sessions 表补齐后增的算式形式两列（有默认值，历史行安全）。
+    _ensure_column(
+        conn, "sessions", "blank_position", "blank_position TEXT NOT NULL DEFAULT 'last'"
+    )
+    _ensure_column(
+        conn, "sessions", "operand_count", "operand_count INTEGER NOT NULL DEFAULT 0"
     )
     conn.commit()
