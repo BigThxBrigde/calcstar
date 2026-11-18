@@ -31,6 +31,9 @@ _OP_MUL = "×"
 #: 除法显示符号
 _OP_DIV = "÷"
 
+#: 填空统一占位记号：空在中间或末尾都用括号占位
+_BLANK_TOKEN = "( )"
+
 #: 低优先级运算符（加减）
 _LOW_PRECEDENCE = (_OP_ADD, _OP_SUB)
 #: 高优先级运算符（乘除）
@@ -59,7 +62,7 @@ def _make_question(
         parts.append(operator)
         parts.append(str(operand))
     return Question(
-        expression=" ".join(parts) + " =",
+        expression=" ".join(parts) + " = " + _BLANK_TOKEN,
         answer=answer,
         operands=operands,
         operators=operators,
@@ -399,7 +402,7 @@ def _build_tokens(
 
 
 def _format_tokens(tokens: list[int | str]) -> str:
-    """把 token 序列格式化为显示文本，括号内侧不加空格。"""
+    """把 token 序列格式化为算式主体文本，括号内侧不加空格。"""
     text = ""
     for token in tokens:
         piece = str(token)
@@ -409,7 +412,7 @@ def _format_tokens(tokens: list[int | str]) -> str:
             text += piece
         else:
             text += " " + piece
-    return text + " ="
+    return text
 
 
 def _parse_factor(
@@ -505,7 +508,7 @@ def _generate_mixed(rng: random.Random, config: PracticeConfig, level: int) -> Q
         ):
             continue
         return Question(
-            expression=_format_tokens(tokens),
+            expression=_format_tokens(tokens) + " = " + _BLANK_TOKEN,
             answer=value,
             operands=tuple(operands),
             operators=tuple(operators),
@@ -539,18 +542,16 @@ _CATEGORY_GENERATORS3 = {
 
 # ---- 填空位置：固定末尾（求结果）或位置不定 ----
 
-#: 表达式中被隐藏位置的空白记号
-_BLANK_TOKEN = "( )"
-
 
 def _blank_question(question: Question, rng: random.Random, mode: str) -> Question:
     """按填空位置模式处理题目。
 
-    ``mode == "last"`` 固定求等号右侧结果，原样返回；
-    ``mode == "any"`` 时每题随机：约半数求结果（原样），否则随机
-    隐藏一个操作数——表达式以空白记号 ``( )`` 占位，等号后给出
-    原结果，答案变为被隐藏操作数的值。混合运算中被隐藏操作数
-    与括号组相邻时回退为求结果，避免括号包住空白。
+    无论空在中间还是末尾，统一用括号记号 ``( )`` 占位：
+    ``mode == "last"`` 固定求等号右侧结果，表达式形如 ``3 + 5 = ( )``；
+    ``mode == "any"`` 时每题随机——约半数仍求结果，否则随机隐藏一个
+    操作数，该位置以 ``( )`` 占位、等号后给出原结果，答案变为被隐藏
+    操作数的值。混合运算中被隐藏操作数与括号组相邻时回退为求结果，
+    避免括号包住空白。
     """
     if mode != "any" or not question.operands:
         return question
@@ -573,7 +574,7 @@ def _blank_question(question: Question, rng: random.Random, mode: str) -> Questi
         expression = " ".join(parts) + " = " + str(question.answer)
     else:
         tokens = _build_tokens(operands, list(question.operators), question.paren_pos)
-        expression = _format_tokens(tokens) + " " + str(question.answer)
+        expression = _format_tokens(tokens) + " = " + str(question.answer)
     return Question(
         expression=expression,
         answer=answer,
@@ -679,8 +680,9 @@ def generate_questions(config: PracticeConfig) -> list[Question]:
 
     ``config.operand_count`` 控制算式目数：0（默认两个数，混合
     保持原随机 2–3 个运算符）、3（三目链式）、-1（每题随机两目
-    或三目）。``config.blank_position == "any"`` 时每题随机填空
-    位置（求结果或隐藏任一操作数），判重以最终显示文本为准。
+    或三目）。空白统一用 ``( )`` 占位：求结果时留在等号右侧，
+    ``config.blank_position == "any"`` 时也可能隐藏任一操作数；
+    判重以最终显示文本为准。
     """
     rng = random.Random(config.seed)
     questions: list[Question] = []

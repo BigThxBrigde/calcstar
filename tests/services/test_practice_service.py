@@ -126,8 +126,9 @@ class TestCreatePractice:
         assert len(set(expressions)) == 40
         assert any(expr.count("+") == 2 for expr in expressions)
         assert any(expr.count("+") == 1 for expr in expressions)
-        assert any("( )" in expr for expr in expressions)
-        assert any("( )" not in expr for expr in expressions)
+        # 末尾空与中间空都用 ( ) 占位：按等号前的部分区分两种题型
+        assert any("( )" in expr.partition(" = ")[0] for expr in expressions)
+        assert any("( )" not in expr.partition(" = ")[0] for expr in expressions)
 
 
 class TestSubmitPractice:

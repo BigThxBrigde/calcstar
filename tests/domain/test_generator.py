@@ -31,7 +31,10 @@ def evaluate_expression(expression: str) -> tuple[int, list[int]]:
     返回 (最终结果, 按求值顺序排列的中间结果)；遇到除数为零或
     除法不整除时抛出 ValueError，供测试断言整除性。
     """
-    body = expression.removesuffix("=").strip()
+    body = expression.strip()
+    if body.endswith("( )"):
+        body = body[:-3].rstrip()
+    body = body.removesuffix("=").strip()
     tokens = body.replace("(", " ( ").replace(")", " ) ").split()
     output: list = []
     stack: list[str] = []
@@ -102,7 +105,7 @@ def test_add_operands_and_result_within_range():
         assert question.answer == sum(question.operands)
         assert 0 <= question.answer <= 20
         a, b = question.operands
-        assert question.expression == f"{a} + {b} ="
+        assert question.expression == f"{a} + {b} = ( )"
 
 
 def test_sub_result_non_negative_by_default():
@@ -187,7 +190,7 @@ def test_mixed_structure_and_evaluation_without_parentheses():
     assert len(questions) == 50
     for question in questions:
         assert 2 <= len(question.operators) <= 3
-        assert "(" not in question.expression
+        assert question.paren_pos is None
         # 四则混合：加减与乘除至少各含一个
         assert any(op in "+-" for op in question.operators)
         assert any(op in "×÷" for op in question.operators)
@@ -206,7 +209,7 @@ def test_mixed_with_parentheses():
         )
     )
     assert len(questions) == 50
-    with_paren = [q for q in questions if "(" in q.expression]
+    with_paren = [q for q in questions if q.paren_pos is not None]
     # 约半数含一层括号，但不允许全部带括号
     assert 0 < len(with_paren) < 50
     for question in questions:
@@ -214,8 +217,9 @@ def test_mixed_with_parentheses():
         assert value == question.answer
         for item in (*intermediates, value):
             assert_in_bounds(item, 20)
-        if "(" in question.expression:
-            assert question.expression.count("(") == question.expression.count(")") == 1
+        if question.paren_pos is not None:
+            body = question.expression.removesuffix(" ( )")
+            assert body.count("(") == body.count(")") == 1
 
 
 def test_mixed_allow_negative_bounds():
@@ -270,7 +274,7 @@ def test_all_seven_categories_generate_full_count():
         expressions = [question.expression for question in questions]
         assert len(set(expressions)) == 30, category
         for question in questions:
-            assert question.expression.endswith(" =")
+            assert question.expression.endswith(" = ( )")
             evaluate_expression(question.expression)
 
 
@@ -305,10 +309,12 @@ def test_exhausted_space_returns_all_available():
     expressions = [question.expression for question in questions]
     assert len(expressions) == 3
     assert len(set(expressions)) == 3
-    assert set(expressions) == {"1 ÷ 1 =", "2 ÷ 1 =", "2 ÷ 2 ="}
+    assert set(expressions) == {"1 ÷ 1 = ( )", "2 ÷ 1 = ( )", "2 ÷ 2 = ( )"}
     # 加法范围 1 的全部组合为 0+0、0+1、1+0
     questions = generate_questions(make_config(OperationCategory.ADD, range_n=1, count=10, seed=4))
-    assert {question.expression for question in questions} == {"0 + 0 =", "0 + 1 =", "1 + 0 ="}
+    assert {question.expression for question in questions} == {
+        "0 + 0 = ( )", "0 + 1 = ( )", "1 + 0 = ( )"
+    }
     # 除法范围 20 的合法空间共 sum(20 // q) 种，count=100 时应全部返回且不重复
     questions = generate_questions(make_config(OperationCategory.DIV, range_n=20, count=100, seed=4))
     expected_space = sum(20 // quotient for quotient in range(1, 21))
@@ -437,15 +443,15 @@ def test_operand_count_random_mixes_two_and_three():
 
 
 def test_blank_position_last_keeps_result_form():
-    """固定末尾（默认）：所有题仍是 a op b = 空白形式，等号结尾。"""
+    """固定末尾（默认）：所有题形如 a op b = ( )，末尾空也用括号占位。"""
     for category in (OperationCategory.ADD, OperationCategory.MIXED):
         questions = generate_questions(
             make_config(category, range_n=20, count=30, seed=43)
         )
         for question in questions:
             assert question.blank_index is None
-            assert "( )" not in question.expression
-            assert question.expression.endswith(" =")
+            assert question.expression.count("( )") == 1
+            assert question.expression.endswith(" = ( )")
 
 
 def _assert_hidden_operand_question(question, range_n: int) -> None:
@@ -471,7 +477,8 @@ def test_blank_position_any_hides_operands_and_results():
     hidden_count = 0
     for question in questions:
         if question.blank_index is None:
-            assert "( )" not in question.expression
+            assert question.expression.endswith(" = ( )")
+            assert question.expression.count("( )") == 1
         else:
             hidden_count += 1
             _assert_hidden_operand_question(question, 20)
@@ -491,7 +498,7 @@ def test_blank_position_any_mixed_avoids_blank_adjacent_to_paren():
     for question in questions:
         if question.blank_index is None:
             continue
-        if "(" in question.expression:
+        if question.paren_pos is not None:
             hidden_with_paren += 1
             idx = question.expression.index("( )")
             # 空白前一个字符不应是 "("，其后一个字符不应是 ")"
