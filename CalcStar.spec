@@ -1,6 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 # CalcStar PyInstaller 打包配置：无控制台窗口，支持两种产物形态：
-#   - onedir（默认，dist\CalcStar\ 目录 + CalcStar.exe，启动更快）
+#   - onedir（默认，dist\CalcStar\ 目录 + CalcStar.exe，启动更快；
+#     运行时文件放在 lib\ 子目录，替代 PyInstaller 默认的 _internal）
 #   - onefile（可选，单个 dist\CalcStar.exe）
 # 由 build.ps1 经环境变量 CALCSTAR_PACK_MODE 控制。
 # web/ 前端资源与 PyQtWebEngine 运行时随包内置；禁用 UPX 以避免压缩损坏 QtWebEngine。
@@ -72,6 +73,7 @@ if PACK_MODE == "onedir":
         target_arch=None,
         codesign_identity=None,
         entitlements_file=None,
+        contents_directory="lib",  # PyInstaller 6+：把默认 _internal 改名为 lib
     )
     coll = COLLECT(
         exe,

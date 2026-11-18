@@ -10,6 +10,9 @@ build/
 dist/
 *.manifest
 
+# 本地 NSIS 工具链（build.ps1 -Pack 自动下载）
+.nsis/
+
 # pytest / coverage
 .pytest_cache/
 .coverage

@@ -48,9 +48,12 @@ pytest              # 当前 157 例全绿，覆盖率 88.18%
 ```powershell
 .\build.ps1                  # 默认目录模式：产出 dist\CalcStar\CalcStar.exe，双击即可运行
 .\build.ps1 -Mode onefile    # 单文件模式：产出 dist\CalcStar.exe
+.\build.ps1 -Pack            # onedir + NSIS：产出 dist\CalcStar-<version>-Setup.exe
 ```
 
-打包内置 Python 运行时、QtWebEngine 内核、全部前端资源与应用图标（星形计算器卡通图标，同时用于窗口与任务栏），目标机器无需安装任何组件。目录模式（默认）启动无需解压临时文件、速度更快；单文件模式便于拷贝分发。面向最终用户的安装与使用说明见 [docs/运行说明.md](docs/运行说明.md)。
+若项目根目录 `.venv` 不存在，`build.ps1` 会自动创建它，并只在该 venv 内安装项目与开发依赖，不会改动全局 Python 环境。
+
+打包内置 Python 运行时、QtWebEngine 内核、全部前端资源与应用图标（星形计算器卡通图标，同时用于窗口与任务栏），目标机器无需安装任何组件。目录模式（默认）启动无需解压临时文件、速度更快，运行时文件放在 `dist\CalcStar\lib\`（PyInstaller 默认的 `_internal` 已改名）；单文件模式便于拷贝分发。`-Pack` 仅适用于 onedir；找不到 `makensis.exe` 时会自动下载 NSIS 便携包（zlib 许可，无商业授权限制）到项目根目录 `.nsis\`（已 gitignore）并校验 SHA256（可用 `-NsisUrl` 换源，或用 `-NsisPath` 指定已有编译器），生成的安装包名为“计算之星”，带开始菜单与桌面快捷方式。面向最终用户的安装与使用说明见 [docs/运行说明.md](docs/运行说明.md)。
 
 ## 数据存储
 
