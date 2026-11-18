@@ -447,6 +447,18 @@ CS.pages.practice = (function () {
     stopTimer();
   }
 
+  /**
+   * 清除做题页的会话记忆：重做同一会话时强制下次 activate 按
+   * "新练习"处理（重置页码与页面状态，避免残留旧作答/页码）。
+   */
+  function resetSession() {
+    stopTimer();
+    session = null;
+    currentPage = 1;
+    pageInputs = [];
+    submitting = false;
+  }
+
   function init() {
     if (!pageEl) {
       return;
@@ -468,6 +480,7 @@ CS.pages.practice = (function () {
   return {
     activate: activate,
     deactivate: deactivate,
-    doSubmit: doSubmit
+    doSubmit: doSubmit,
+    resetSession: resetSession
   };
 })();

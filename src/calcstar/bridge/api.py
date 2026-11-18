@@ -122,6 +122,20 @@ class CalcStarBridge(QObject):
         return self._respond(run)
 
     @pyqtSlot(str, result=str)
+    def reset_practice(self, payload: str) -> str:
+        """重做历史练习：payload 为 {session_id}；不新建记录。
+
+        将该会话重置为未作答状态（题目保持原卷），返回结构同
+        create_practice；提交后原地更新同一条历史记录。会话不存在
+        返回 ok=False。
+        """
+        def run() -> dict:
+            data = self._parse_payload(payload)
+            return self._practice.reset_practice(int(data["session_id"]))
+
+        return self._respond(run)
+
+    @pyqtSlot(str, result=str)
     def create_practice_from_wrong_book(self, payload: str) -> str:
         """从错题本创建练习：payload 为参数 JSON（category/count 等）。"""
         return self._respond(

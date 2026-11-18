@@ -379,6 +379,78 @@ class TestDeleteSession:
         assert repositories.delete_session(conn, 9999) is False
 
 
+class TestResetSession:
+    def test_reset_clears_answers_and_stats(self, conn):
+        """重置后题目作答清空、会话统计归零、状态回到 in_progress。"""
+        session_id, questions = _new_session(conn)
+        answers = {q["seq"]: q["answer"] for q in questions}
+        answers[1] = 100  # 答错
+        repositories.submit_answers(conn, session_id, answers,
+                                    _graded_for(questions, answers), 60.0)
+        repositories.update_correction(conn, session_id, 1, 5, False)
+
+        row = repositories.reset_session(conn, session_id)
+        assert row is not None
+        assert row["status"] == "in_progress"
+        assert row["score"] is None
+        assert row["correct_count"] is None
+        assert row["total_count"] is None
+        assert row["finished_at"] is None
+        assert row["duration_seconds"] is None
+        assert row["correction_round"] == 0
+        assert row["passed"] == 0
+
+        detail = repositories.get_session_detail(conn, session_id)
+        assert len(detail["questions"]) == 5
+        for q in detail["questions"]:
+            assert q["user_answer"] is None
+            assert q["is_correct"] is None
+            assert q["correction_count"] == 0
+        # 题目本身保持原卷不变
+        assert [q["expression"] for q in detail["questions"]] == \
+            [q["expression"] for q in questions]
+
+    def test_reset_refreshes_started_at(self, conn):
+        """重置后 started_at 刷新为当前时间（重做记录排到最新）。"""
+        session_id, _ = _new_session(conn)
+        before = repositories.get_session_detail(conn, session_id)["started_at"]
+        repositories.reset_session(conn, session_id)
+        after = repositories.get_session_detail(conn, session_id)["started_at"]
+        assert after >= before
+
+    def test_reset_keeps_wrong_book(self, conn):
+        """重置不改动错题本聚合数据。"""
+        session_id, questions = _new_session(conn)
+        answers = {q["seq"]: q["answer"] for q in questions}
+        answers[1] = 100  # 答错
+        repositories.submit_answers(conn, session_id, answers,
+                                    _graded_for(questions, answers), 60.0)
+        repositories.reset_session(conn, session_id)
+        assert [r["expression"] for r in repositories.list_wrong_book(conn)] == ["7-9"]
+
+    def test_reset_resubmit_updates_same_record(self, conn):
+        """重置后再次提交：同一条记录被原地更新，不新增会话。"""
+        session_id, questions = _new_session(conn)
+        wrong = {q["seq"]: q["answer"] + 1 for q in questions}
+        repositories.submit_answers(conn, session_id, wrong,
+                                    _graded_for(questions, wrong), 30.0)
+        total_before = repositories.list_history(conn)["total"]
+
+        repositories.reset_session(conn, session_id)
+        answers = {q["seq"]: q["answer"] for q in questions}
+        repositories.submit_answers(conn, session_id, answers,
+                                    _graded_for(questions, answers), 45.0)
+
+        assert repositories.list_history(conn)["total"] == total_before
+        detail = repositories.get_session_detail(conn, session_id)
+        assert detail["score"] == 100
+        assert detail["duration_seconds"] == 45.0
+
+    def test_reset_missing_session(self, conn):
+        """会话不存在时返回 None（幂等）。"""
+        assert repositories.reset_session(conn, 9999) is None
+
+
 class TestSessionFormColumns:
     def test_create_session_stores_form_params(self, conn):
         """create_session 持久化 blank_position/operand_count。"""

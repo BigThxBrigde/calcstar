@@ -184,6 +184,44 @@ class TestQueries:
         assert "不存在" in resp["error"]
 
 
+class TestResetPractice:
+    def test_reset_ok_and_resubmit_updates_same_record(self, bridge):
+        """重做：ok=True 且 session_id 不变；再提交后历史总数不变。"""
+        data = _create(bridge)
+        sid = data["session_id"]
+        answers = _answers_via_bridge(bridge, sid)
+        bridge.submit_practice(json.dumps({
+            "session_id": sid,
+            "answers": {str(seq): ans + 1 for seq, ans in answers.items()},
+            "duration_seconds": 20,
+        }))
+        total_before = json.loads(bridge.list_history("{}"))["data"]["total"]
+
+        resp = json.loads(bridge.reset_practice(
+            json.dumps({"session_id": sid})
+        ))
+        assert resp["ok"] is True
+        assert resp["data"]["session_id"] == sid
+        assert len(resp["data"]["questions"]) == 5
+
+        bridge.submit_practice(json.dumps({
+            "session_id": sid,
+            "answers": {str(seq): ans for seq, ans in answers.items()},
+            "duration_seconds": 55,
+        }))
+        hist = json.loads(bridge.list_history("{}"))["data"]
+        assert hist["total"] == total_before
+        assert hist["items"][0]["id"] == sid
+
+    def test_reset_missing_session(self, bridge):
+        """会话不存在：ok=False 且 error 提示不存在。"""
+        resp = json.loads(bridge.reset_practice(
+            json.dumps({"session_id": 999})
+        ))
+        assert resp["ok"] is False
+        assert "不存在" in resp["error"]
+
+
 class TestExportReportPdf:
     def _submit(self, bridge):
         """创建并提交一局练习，返回 session_id。"""

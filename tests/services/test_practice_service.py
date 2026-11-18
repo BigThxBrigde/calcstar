@@ -36,6 +36,11 @@ def _answers_of(service, session_id):
     return {row["seq"]: row["answer"] for row in rows}
 
 
+def _sessions_count(service):
+    """当前数据库中的会话总数。"""
+    return service._conn.execute("SELECT COUNT(*) FROM sessions").fetchone()[0]
+
+
 class TestCreatePractice:
     def test_invalid_params_range_and_count(self, service):
         """范围为 0、题量超限等非法参数抛 InvalidParamsError 且逐条列出。"""
@@ -205,6 +210,63 @@ class TestSubmitPractice:
         """不存在的会话抛 SessionNotFoundError。"""
         with pytest.raises(SessionNotFoundError):
             service.submit_practice(999, {})
+
+
+class TestResetPractice:
+    def test_reset_returns_same_structure_and_session(self, service):
+        """重做返回结构同 create_practice，session_id 保持不变。"""
+        created = _create(service)
+        answers = _answers_of(service, created["session_id"])
+        service.submit_practice(created["session_id"], answers, 30.0)
+
+        data = service.reset_practice(created["session_id"])
+        assert data["session_id"] == created["session_id"]
+        assert data["total_count"] == 5
+        assert data["per_page"] == 5
+        assert data["total_pages"] == 1
+        assert data["duration_seconds"] == 300
+        assert data["category"] == "add"
+        assert data["range_n"] == 10
+        assert len(data["questions"]) == 5
+        assert set(data["questions"][0]) == {"seq", "expression"}
+
+    def test_reset_restores_in_progress_state(self, service):
+        """重做后会话回到未作答状态，题目保持原卷。"""
+        created = _create(service)
+        sid = created["session_id"]
+        answers = _answers_of(service, sid)
+        service.submit_practice(sid, answers, 30.0)
+
+        service.reset_practice(sid)
+        detail = get_session_detail(service._conn, sid)
+        assert detail["status"] == "in_progress"
+        assert detail["score"] is None
+        assert all(q["user_answer"] is None for q in detail["questions"])
+        # 题目与原卷一致（原卷重做，非重新生成）
+        assert [q["expression"] for q in detail["questions"]] == \
+            [q["expression"] for q in created["questions"]]
+
+    def test_resubmit_after_reset_updates_same_record(self, service):
+        """重做后再提交：同一条历史记录被更新，历史总数不变。"""
+        created = _create(service)
+        sid = created["session_id"]
+        answers = _answers_of(service, sid)
+        wrong = {seq: ans + 1 for seq, ans in answers.items()}
+        service.submit_practice(sid, wrong, 20.0)
+        total_before = _sessions_count(service)
+
+        service.reset_practice(sid)
+        service.submit_practice(sid, answers, 55.0)
+
+        assert _sessions_count(service) == total_before
+        detail = get_session_detail(service._conn, sid)
+        assert detail["score"] == 100
+        assert detail["duration_seconds"] == pytest.approx(55.0)
+
+    def test_reset_missing_session(self, service):
+        """不存在的会话抛 SessionNotFoundError。"""
+        with pytest.raises(SessionNotFoundError):
+            service.reset_practice(9999)
 
 
 class TestSubmitCorrection:

@@ -31,6 +31,7 @@ from calcstar.data.repositories import (
     increment_correction_round,
     list_wrong_book,
     mark_session_passed,
+    reset_session,
     save_questions,
     submit_answers,
     update_correction,
@@ -198,6 +199,38 @@ class PracticeService:
         if source is not None:
             result["source"] = source
         return result
+
+    def reset_practice(self, session_id: int) -> dict:
+        """重做一局历史练习：重置原会话为未作答状态并返回练习数据。
+
+        与 create_practice 不同，本方法不新建会话记录，而是将指定
+        会话清空作答（题目保持原卷不变），重新进入练习后提交会
+        原地更新同一条历史记录。
+
+        Args:
+            session_id: 要重做的历史会话 id。
+
+        Returns:
+            结构同 create_practice（session_id/questions/total_count/
+            per_page/total_pages/duration_seconds/category/range_n）。
+
+        Raises:
+            SessionNotFoundError: 会话不存在。
+        """
+        detail = get_session_detail(self._conn, session_id)
+        if detail is None:
+            raise SessionNotFoundError(f"练习会话不存在：session_id={session_id}")
+
+        reset_session(self._conn, session_id)
+
+        return self._build_practice_result(
+            session_id,
+            detail["questions"],
+            int(detail["per_page"]),
+            detail["duration_minutes"],
+            detail["category"],
+            int(detail["range_n"]),
+        )
 
     def submit_practice(
         self,

@@ -380,7 +380,7 @@ CS.pages.history = (function () {
 
   /* ---------------- 行级重做 ---------------- */
 
-  /** 按某次练习的原设置重新生成一局（含算式形式参数，与当次完全一致） */
+  /** 重做某次练习：重置原会话为未作答状态（题目保持原卷），不新建记录 */
   async function redoRow(sessionId, span) {
     if (rowRedoing) {
       return;
@@ -390,31 +390,19 @@ CS.pages.history = (function () {
     span.textContent = "生成中…";
     span.classList.add("is-busy");
     try {
-      // 先取该会话的完整配置，再按原参数重新出题（全新的会话与题目）
-      const detail = await CS.api.callBridge("get_session_detail", {
+      // 重置原会话（同一条记录原地复用，提交后更新该条历史）
+      const data = await CS.api.callBridge("reset_practice", {
         session_id: sessionId,
       });
-      const config = {
-        category: detail.category,
-        range_n: Number(detail.range_n),
-        count: Number(detail.count),
-        duration_minutes:
-          detail.duration_minutes == null
-            ? null
-            : Number(detail.duration_minutes),
-        allow_negative: Number(detail.allow_negative) === 1,
-        include_parentheses: Number(detail.include_parentheses) === 1,
-        per_page: Number(detail.per_page),
-        blank_position: detail.blank_position || "last",
-        operand_count: Number(detail.operand_count) || 0,
-      };
-      const data = await CS.api.callBridge("create_practice", config);
+      if (CS.pages.practice && CS.pages.practice.resetSession) {
+        CS.pages.practice.resetSession();
+      }
       CS.state.currentSession = data;
-      CS.state.config = config;
+      CS.state.config = null;
       CS.state.answers = {};
       CS.state.startedAt = Date.now();
       CS.router.showPage("page-practice");
-      CS.toast.success("已按原设置生成新练习，加油哦！");
+      CS.toast.success("已重置本次练习，加油哦！");
     } catch (err) {
       CS.toast.error(
         err && err.message ? err.message : "重做失败，请重试"

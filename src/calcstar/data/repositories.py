@@ -428,6 +428,58 @@ def clear_history(conn: sqlite3.Connection) -> int:
     return deleted
 
 
+def reset_session(conn: sqlite3.Connection, session_id: int) -> Optional[dict]:
+    """重置一局练习会话为未作答状态（供历史"重做"原地复用同一条记录）。
+
+    行为：
+
+    1. questions 表该会话所有题目清空作答（user_answer=NULL、
+       is_correct=NULL、correction_count=0），题目本身不变；
+    2. sessions 表清空作答统计（finished_at/duration_seconds/
+       correct_count/total_count/score 置 NULL），status 重新置为
+       'in_progress'、passed=0、correction_round=0，started_at 刷新为
+       当前时间（历史列表按开始时间倒序，重做后该记录排到最新）；
+    3. 错题本（wrong_book）为独立聚合表，不做改动。
+
+    Args:
+        conn: 数据库连接；
+        session_id: 会话 id。
+
+    Returns:
+        重置后的会话 dict（不含题目）；会话不存在返回 None（幂等）。
+    """
+    row = conn.execute(
+        "SELECT id FROM sessions WHERE id = ?", (session_id,)
+    ).fetchone()
+    if row is None:
+        return None
+
+    conn.execute(
+        """
+        UPDATE questions
+        SET user_answer = NULL, is_correct = NULL, correction_count = 0
+        WHERE session_id = ?
+        """,
+        (session_id,),
+    )
+    conn.execute(
+        """
+        UPDATE sessions
+        SET started_at = ?, finished_at = NULL, duration_seconds = NULL,
+            correct_count = NULL, total_count = NULL, score = NULL,
+            correction_round = 0, status = 'in_progress', passed = 0
+        WHERE id = ?
+        """,
+        (_now(), session_id),
+    )
+    conn.commit()
+    return dict(
+        conn.execute(
+            "SELECT * FROM sessions WHERE id = ?", (session_id,)
+        ).fetchone()
+    )
+
+
 def delete_session(conn: sqlite3.Connection, session_id: int) -> bool:
     """删除单条练习会话及其逐题明细（错题本保留）。
 
