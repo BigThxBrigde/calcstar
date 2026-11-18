@@ -1,9 +1,14 @@
 # -*- mode: python ; coding: utf-8 -*-
-# CalcStar PyInstaller 打包配置：单文件、无控制台窗口。
+# CalcStar PyInstaller 打包配置：无控制台窗口，支持两种产物形态：
+#   - onedir（默认，dist\CalcStar\ 目录 + CalcStar.exe，启动更快）
+#   - onefile（可选，单个 dist\CalcStar.exe）
+# 由 build.ps1 经环境变量 CALCSTAR_PACK_MODE 控制。
 # web/ 前端资源与 PyQtWebEngine 运行时随包内置；禁用 UPX 以避免压缩损坏 QtWebEngine。
 
 import os
 import glob
+
+PACK_MODE = os.environ.get("CALCSTAR_PACK_MODE", "onedir")
 
 datas = []
 for f in glob.glob(os.path.join("web", "**", "*"), recursive=True):
@@ -48,22 +53,52 @@ a = Analysis(
 
 pyz = PYZ(a.pure)
 
-exe = EXE(
-    pyz,
-    a.scripts,
-    a.binaries,
-    a.datas,
-    [],
-    name="CalcStar",
-    debug=False,
-    bootloader_ignore_signals=False,
-    strip=False,
-    upx=False,  # 禁用 UPX：压缩 QtWebEngine 的 DLL 会导致运行异常
-    console=False,
-    icon="assets/calcstar.ico",  # exe 文件图标（资源管理器/任务栏/快捷方式）
-    disable_windowed_traceback=False,
-    argv_emulation=False,
-    target_arch=None,
-    codesign_identity=None,
-    entitlements_file=None,
-)
+if PACK_MODE == "onedir":
+    # 目录模式：EXE 不内嵌二进制，由 COLLECT 汇总到 dist\CalcStar\ 目录
+    exe = EXE(
+        pyz,
+        a.scripts,
+        [],
+        exclude_binaries=True,
+        name="CalcStar",
+        debug=False,
+        bootloader_ignore_signals=False,
+        strip=False,
+        upx=False,  # 禁用 UPX：压缩 QtWebEngine 的 DLL 会导致运行异常
+        console=False,
+        icon="assets/calcstar.ico",  # exe 文件图标（资源管理器/任务栏/快捷方式）
+        disable_windowed_traceback=False,
+        argv_emulation=False,
+        target_arch=None,
+        codesign_identity=None,
+        entitlements_file=None,
+    )
+    coll = COLLECT(
+        exe,
+        a.binaries,
+        a.datas,
+        strip=False,
+        upx=False,
+        name="CalcStar",
+    )
+else:
+    # 单文件模式：全部资源内嵌进单个 exe
+    exe = EXE(
+        pyz,
+        a.scripts,
+        a.binaries,
+        a.datas,
+        [],
+        name="CalcStar",
+        debug=False,
+        bootloader_ignore_signals=False,
+        strip=False,
+        upx=False,  # 禁用 UPX：压缩 QtWebEngine 的 DLL 会导致运行异常
+        console=False,
+        icon="assets/calcstar.ico",  # exe 文件图标（资源管理器/任务栏/快捷方式）
+        disable_windowed_traceback=False,
+        argv_emulation=False,
+        target_arch=None,
+        codesign_identity=None,
+        entitlements_file=None,
+    )
