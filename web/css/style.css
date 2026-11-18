@@ -254,8 +254,10 @@ input {
 .chip-group {
   display: flex;
   flex-wrap: wrap;
-  /* QtWebEngine(Chromium 83) 不支持 flex gap，用 margin 实现间距 */
-  margin: -6px;
+  /* QtWebEngine(Chromium 83) 不支持 flex gap，用 margin 实现间距；
+     仅做水平补偿（首尾对齐），纵向间距由父级 margin 控制 */
+  margin-left: -6px;
+  margin-right: -6px;
 }
 
 .chip-group .chip {
@@ -434,6 +436,20 @@ input {
 .option-column {
   flex-direction: column;
   align-items: flex-start;
+}
+
+/* 纵向排列时补齐小标题与按钮组、按钮组与提示之间的间距 */
+.option-column > .option-name {
+  margin-bottom: 6px;
+}
+
+.option-column > .chip-group {
+  margin-top: 0;
+  margin-bottom: 2px;
+}
+
+.option-column > .option-hint {
+  margin-top: 0;
 }
 
 .switch {
