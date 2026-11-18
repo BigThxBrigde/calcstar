@@ -31,6 +31,18 @@ Unicode true
 
 Section "安装"
     SetShellVarContext current
+
+    ; 若注册表记录了不同的旧安装目录，先清理旧副本（改安装路径时不会自动搬移）
+    ReadRegStr $0 HKCU "Software\${APP_ID}" "InstallDir"
+    StrCmp $0 "" no_old_dir
+    StrCmp $0 "$INSTDIR" no_old_dir
+    IfFileExists "$0\uninstall.exe" 0 no_old_uninstaller
+        ExecWait '"$0\uninstall.exe" /S _?=$0'
+        Delete "$0\uninstall.exe"
+    no_old_uninstaller:
+    RMDir /r /REBOOTOK "$0"
+    no_old_dir:
+
     SetOutPath "$INSTDIR"
     File /r "..\dist\CalcStar\*.*"
 
@@ -55,7 +67,7 @@ Section "Uninstall"
     RMDir "$SMPROGRAMS\${APP_NAME}"
     Delete "$DESKTOP\${APP_NAME}.lnk"
     Delete "$INSTDIR\uninstall.exe"
-    RMDir /r "$INSTDIR"
+    RMDir /r /REBOOTOK "$INSTDIR"
     DeleteRegKey HKCU "Software\${APP_ID}"
     DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_ID}"
 SectionEnd
