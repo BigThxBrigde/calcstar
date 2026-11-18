@@ -24,7 +24,7 @@
 | 前后端通信 | QWebChannel 桥接，无 HTTP、无端口 |
 | 前端 | 原生 HTML / CSS / JS，儿童活泼风设计系统 |
 | 持久化 | SQLite |
-| 构建 | pyproject.toml（src 布局）+ PyInstaller 单文件 exe |
+| 构建 | pyproject.toml（src 布局）+ PyInstaller 打包（默认目录模式，可选单文件） |
 
 ## 快速开始（开发）
 
@@ -46,10 +46,11 @@ pytest              # 当前 157 例全绿，覆盖率 88.18%
 ## 打包发布
 
 ```powershell
-.\build.ps1      # 产出 dist\CalcStar.exe，双击即可运行
+.\build.ps1                  # 默认目录模式：产出 dist\CalcStar\CalcStar.exe，双击即可运行
+.\build.ps1 -Mode onefile    # 单文件模式：产出 dist\CalcStar.exe
 ```
 
-打包产物为单文件 exe（约 108 MB），内置 Python 运行时、QtWebEngine 内核、全部前端资源与应用图标（星形计算器卡通图标，同时用于窗口与任务栏），目标机器无需安装任何组件。面向最终用户的安装与使用说明见 [docs/运行说明.md](docs/运行说明.md)。
+打包内置 Python 运行时、QtWebEngine 内核、全部前端资源与应用图标（星形计算器卡通图标，同时用于窗口与任务栏），目标机器无需安装任何组件。目录模式（默认）启动无需解压临时文件、速度更快；单文件模式便于拷贝分发。面向最终用户的安装与使用说明见 [docs/运行说明.md](docs/运行说明.md)。
 
 ## 数据存储
 

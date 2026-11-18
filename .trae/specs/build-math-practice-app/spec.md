@@ -6,7 +6,7 @@
 ## What Changes
 - 新增基于 Python 的纯桌面应用（PyQt5 + PyQtWebEngine 直接加载本地前端资源，内置 Chromium 内核，通过 QWebChannel 桥接调用后端，不启动任何 HTTP 服务、不经浏览器、无需安装 WebView2 或任何外部运行时）。
 - 项目采用 **pyproject.toml**（PEP 621）管理元数据、依赖与工具配置，src 布局，提供 `calcstar` 控制台入口与 `python -m calcstar` 运行方式；开发环境统一使用项目根目录下的 **venv**（`.venv`），所有命令（pytest、打包、运行）均通过 `.venv` 解释器执行。
-- 新增 PyInstaller 打包流程，产出**单文件 `CalcStar.exe`，双击即运行，无控制台窗口、无需安装 Python、无需浏览器**。
+- 新增 PyInstaller 打包流程，支持两种产物形态：**目录模式（默认）`dist\CalcStar\CalcStar.exe`** 与单文件模式（可选）`dist\CalcStar.exe`，双击即运行，无控制台窗口、无需安装 Python、无需浏览器。
 - 新增"设置 → 做题 → 判分订正 → 返回设置"的完整闭环流程。
 - 新增题库随机生成引擎（加／减／加减／乘／除／乘除／四则混合，可控数值范围、题量、是否含括号）。
 - 新增 SQLite 持久化：练习记录、逐题作答明细、错题集。
@@ -30,7 +30,7 @@
   - `src/calcstar/desktop/` — 桌面壳：`window.py`（QWebEngineView 窗口、QWebChannel 注册、应用入口）
 - 前端为无构建步骤的原生 HTML/CSS/JS，界面使用现代卡片式布局、柔和渐变、圆角、轻量动效，响应式适配 1024×640 及以上窗口。
 - 构建：`pyproject.toml`（setuptools 后端）声明依赖（`PyQt5`、`PyQtWebEngine`）、开发依赖（pytest、pytest-cov、pyinstaller）与 `[project.scripts]` 入口；pytest/覆盖率配置同样写入 pyproject.toml。
-- 打包：PyInstaller `--onefile --windowed`，前端资源与图标内置；产物为单个 `dist/CalcStar.exe`。QtWebEngine 运行时随包打包，目标机器无需安装任何额外组件。
+- 打包：PyInstaller + `CalcStar.spec`（`build.ps1` 支持 `-Mode onedir|onefile`，默认 `onedir`，经环境变量 `CALCSTAR_PACK_MODE` 传给 spec），前端资源与图标内置；目录模式产物为 `dist\CalcStar\CalcStar.exe`，单文件模式产物为单个 `dist\CalcStar.exe`。QtWebEngine 运行时随包打包，目标机器无需安装任何额外组件。
 - 数据存放于用户数据目录（Windows：`%APPDATA%\CalcStar\calcstar.db`），也可通过环境变量 `CALCSTAR_DB` 覆盖；exe 无安装、可整体复制迁移。
 
 ## ADDED Requirements
@@ -130,7 +130,7 @@
 
 #### Scenario: 行级重做
 - **WHEN** 用户在历史列表某行点击"重做"
-- **THEN** 系统读取该次练习的原始配置（类别、范围、题量、限时、选项与算式形式），按原参数重新出题生成全新会话并进入做题页；生成期间按钮显示"生成中…"并防并发
+- **THEN** 系统将该条会话重置为未作答状态（题目保持原卷、作答统计清零、状态回到进行中、开始时间刷新为当前），进入做题页重做；提交后原地更新同一条历史记录（不新建记录）；重做期间按钮显示"生成中…"并防并发；会话不存在时返回错误提示
 
 #### Scenario: 行级删除
 - **WHEN** 用户在历史列表某行点击"删除"并二次确认（4 秒内再点一次"确认删除"，否则自动复位；多行同时只允许一处确认态）
@@ -164,13 +164,21 @@
 - **THEN** 历史成绩与错题集仍可查看，数据文件位于用户数据目录
 
 ### Requirement: 独立可执行文件
-系统 SHALL 能打包为零依赖的单文件可执行程序供分发。
+系统 SHALL 能打包为零依赖的可执行程序供分发（默认目录模式，可选单文件模式）。
+
+#### Scenario: 默认目录模式打包
+- **WHEN** 执行 `.\build.ps1`（默认 `-Mode onedir`）
+- **THEN** 生成 `dist\CalcStar\` 目录（入口 `CalcStar.exe`，内置前端资源、Python 运行时与 QtWebEngine/Chromium 内核），双击即可运行，无需安装 Python 或任何第三方库；启动时无需解压临时文件
+
+#### Scenario: 单文件模式打包（可选）
+- **WHEN** 执行 `.\build.ps1 -Mode onefile`
+- **THEN** 生成单个 `dist\CalcStar.exe`（同样内置全部运行时与资源），双击即可运行
 
 #### Scenario: 打包产物
 - **WHEN** 执行 `.\build.ps1`
-- **THEN** 生成 `dist\CalcStar.exe` 单文件（内置前端资源、Python 运行时与 QtWebEngine/Chromium 内核），双击即可运行，无需安装 Python 或任何第三方库
+- **THEN** 生成 `dist\CalcStar\CalcStar.exe` 目录模式产物（内置前端资源、Python 运行时与 QtWebEngine/Chromium 内核；`-Mode onefile` 时为单文件 `dist\CalcStar.exe`），双击即可运行，无需安装 Python 或任何第三方库
 - **AND** 应用图标（assets/calcstar.ico，16–256px 多尺寸）写入 exe 资源并随包内置：资源管理器、任务栏、快捷方式显示自定义图标，运行期窗口与标题栏使用同一图标
-- **WHEN** 用户把该 exe 拷贝到另一台 Win10/11 机器
+- **WHEN** 用户把该产物（目录或单文件）拷贝到另一台 Win10/11 机器
 - **THEN** 双击可正常运行并新建自己的本地数据库
 
 #### Scenario: 体积与启动

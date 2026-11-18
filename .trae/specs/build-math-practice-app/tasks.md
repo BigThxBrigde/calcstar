@@ -11,7 +11,7 @@
   - [x] SubTask 1.3: 实现 `config.py`：用户数据目录与数据库路径（`%APPDATA%\CalcStar`，支持 `CALCSTAR_DB` 覆盖）、开发态/打包态资源目录解析、参数枚举与默认值
   - [x] SubTask 1.4: 实现 `desktop/window.py`：QWebEngineView 主窗口 1024×720、加载本地 `web/index.html`、QWebChannel 注册桥接对象、关闭窗口即退出进程
   - [x] SubTask 1.5: 验证 venv 内 `calcstar` 命令与 `python -m calcstar` 均能启动空窗口
-  - [x] SubTask 1.6: 编写 `CalcStar.spec` 与 `build.ps1`（PyInstaller `--onefile --windowed`，使用 venv 解释器运行 PyInstaller，内置 web 资源与 QtWebEngine 运行时），产出 `dist\CalcStar.exe`
+  - [x] SubTask 1.6: 编写 `CalcStar.spec` 与 `build.ps1`（PyInstaller，无控制台窗口，使用 venv 解释器运行 PyInstaller，内置 web 资源与 QtWebEngine 运行时；后经 Task 19 扩展为 onedir/onefile 双模式，默认 onedir）
 
 - [x] Task 2: 领域层——出题引擎 `domain/`
   - [x] SubTask 2.1: `domain/models.py`：Question、PracticeConfig 等数据类（表达式文本、正确答案、运算符序列、练习参数）
@@ -112,7 +112,13 @@
 - [x] Task 18: 历史列表操作列扩展（行级重做与删除）
   - [x] SubTask 18.1: sessions 表幂等迁移新增 blank_position/operand_count 两列（PRAGMA table_info 检查 + ALTER TABLE），create_session/create_practice 持久化算式形式参数，供重做保真复现
   - [x] SubTask 18.2: data/services/bridge 新增 delete_session（删除单条会话与明细、保留错题本、不存在报错、幂等），测试覆盖
-  - [x] SubTask 18.3: 操作列"导出/重做/删除"三个按钮同行排布（窄屏自动换列）；重做读取会话原配置重建练习（含算式形式），删除 4 秒两步确认且多行互斥；测试新增 8 例
+  - [x] SubTask 18.3: 操作列"导出/重做/删除"三个按钮同行排布（窄屏自动换列）；删除 4 秒两步确认且多行互斥；测试新增 8 例
+  - [x] SubTask 18.4（后增修订）: 按用户要求重做改为原地复用原记录——新增 repositories.reset_session（题目作答清零、会话统计清零、状态回 in_progress、started_at 刷新、错题本保留）与 services/bridge reset_practice，前端重做走 reset_practice 不再新建会话，提交后更新同一条历史记录
+
+- [x] Task 19: 打包方式扩展（onedir 默认 + onefile 可选）
+  - [x] SubTask 19.1: `CalcStar.spec` 支持双形态（经环境变量 `CALCSTAR_PACK_MODE` 选择）：onedir 走 EXE(exclude_binaries)+COLLECT 产出 `dist\CalcStar\CalcStar.exe`；onefile 保持单 exe 产出 `dist\CalcStar.exe`；图标/内置资源/UPX 禁用两种模式一致
+  - [x] SubTask 19.2: `build.ps1` 增加 `-Mode onedir|onefile` 参数（默认 onedir），打包前清理另一模式的陈旧产物，按模式校验对应产物路径
+  - [x] SubTask 19.3: spec/tasks/checklist/README/运行说明同步；两种模式分别打包验证可启动
 
 # Task Dependencies
 - Task 0 已完成
@@ -132,3 +138,4 @@
 - Task 15 依赖 Task 11（导出链路已存在）：15.1/15.2 先行，15.3 依赖 15.1/15.2，15.4 收尾
 - Task 16 依赖 Task 6（做题页就绪）
 - Task 18 依赖 Task 8/9（历史页与数据层就绪）：18.1 先行（重做保真依赖会话落库算式形式），18.2 独立可并行，18.3 依赖 18.1/18.2
+- Task 19 依赖 Task 1/13（打包脚本与图标就绪）：19.1 先行，19.2 依赖 19.1，19.3 收尾
