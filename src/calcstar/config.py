@@ -70,7 +70,9 @@ def get_user_data_dir() -> Path:
     回退到 ``~/.calcstar``。
     """
     appdata = os.environ.get("APPDATA")
-    data_dir = Path(appdata) / "CalcStar" if appdata else Path.home() / ".calcstar"
+    data_dir = (
+        Path(appdata) / "CalcStar" if appdata else Path.home() / ".calcstar"
+    )
     data_dir.mkdir(parents=True, exist_ok=True)
     return data_dir
 
@@ -180,8 +182,8 @@ def validate_params(
     ):
         errors.append(
             f"操作数个数无效：{operand_count}"
-            f"（可选值：{OPERAND_COUNT_DEFAULT}、{MIN_OPERAND_COUNT}~{MAX_OPERAND_COUNT}、"
-            f"{OPERAND_COUNT_RANDOM}）"
+            f"（可选值：{OPERAND_COUNT_DEFAULT}、"
+            f"{MIN_OPERAND_COUNT}~{MAX_OPERAND_COUNT}、{OPERAND_COUNT_RANDOM}）"
         )
 
     return errors

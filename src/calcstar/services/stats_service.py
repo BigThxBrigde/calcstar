@@ -116,7 +116,9 @@ class StatsService:
         Returns:
             错题字典列表，按指定字段倒序排列。
         """
-        return list_wrong_book(self._conn, category=category, order_by=order_by)
+        return list_wrong_book(
+            self._conn, category=category, order_by=order_by
+        )
 
     def list_wrong_book_page(
         self,

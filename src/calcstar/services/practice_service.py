@@ -163,7 +163,12 @@ class PracticeService:
         save_questions(self._conn, session_id, question_rows)
 
         return self._build_practice_result(
-            session_id, question_rows, per_page, duration_minutes, category, range_n
+            session_id,
+            question_rows,
+            per_page,
+            duration_minutes,
+            category,
+            range_n,
         )
 
     @staticmethod
@@ -189,7 +194,9 @@ class PracticeService:
             ],
             "total_count": total_count,
             "per_page": per_page,
-            "total_pages": math.ceil(total_count / per_page) if total_count else 0,
+            "total_pages": (
+                math.ceil(total_count / per_page) if total_count else 0
+            ),
             "duration_seconds": (
                 None if duration_minutes is None else duration_minutes * 60
             ),
@@ -271,7 +278,9 @@ class PracticeService:
             )
             for row in detail["questions"]
         ]
-        normalized = {int(seq): answer for seq, answer in (answers or {}).items()}
+        normalized = {
+            int(seq): answer for seq, answer in (answers or {}).items()
+        }
 
         graded_result = grade_answers(questions, normalized)
         graded = [
@@ -284,7 +293,9 @@ class PracticeService:
             }
             for record in graded_result.results
         ]
-        submit_answers(self._conn, session_id, normalized, graded, duration_seconds)
+        submit_answers(
+            self._conn, session_id, normalized, graded, duration_seconds
+        )
 
         return {
             "score": graded_result.score,
@@ -348,7 +359,9 @@ class PracticeService:
             if row is None:
                 continue
             is_correct = user_answer == int(row["answer"])
-            update_correction(self._conn, session_id, seq, user_answer, is_correct)
+            update_correction(
+                self._conn, session_id, seq, user_answer, is_correct
+            )
             if not is_correct:
                 any_wrong_this_round = True
 
@@ -433,7 +446,11 @@ class PracticeService:
             else (selected[0]["category"] or OperationCategory.ADD.value)
         )
         errors = validate_params(
-            session_category, range_n, len(selected), duration_minutes, per_page
+            session_category,
+            range_n,
+            len(selected),
+            duration_minutes,
+            per_page,
         )
         if errors:
             raise InvalidParamsError(errors)

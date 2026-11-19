@@ -73,7 +73,9 @@ def save_settings(settings: dict, path: Optional[_PathLike] = None) -> None:
     settings_path = Path(path) if path is not None else get_settings_path()
     settings_path.parent.mkdir(parents=True, exist_ok=True)
 
-    fd, tmp_name = tempfile.mkstemp(dir=str(settings_path.parent), suffix=".tmp")
+    fd, tmp_name = tempfile.mkstemp(
+        dir=str(settings_path.parent), suffix=".tmp"
+    )
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as fh:
             json.dump(payload, fh, ensure_ascii=False, indent=2)

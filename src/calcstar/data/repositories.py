@@ -298,7 +298,9 @@ def mark_session_passed(conn: sqlite3.Connection, session_id: int) -> None:
     conn.commit()
 
 
-def increment_correction_round(conn: sqlite3.Connection, session_id: int) -> None:
+def increment_correction_round(
+    conn: sqlite3.Connection, session_id: int
+) -> None:
     """仅递增会话的订正轮数（correction_round +1），不改状态。
 
     Args:
@@ -353,7 +355,9 @@ def list_history(
     }
 
 
-def get_session_detail(conn: sqlite3.Connection, session_id: int) -> Optional[dict]:
+def get_session_detail(
+    conn: sqlite3.Connection, session_id: int
+) -> Optional[dict]:
     """获取会话详情：会话字段 + 按 seq 升序排列的题目列表。
 
     Args:
@@ -442,7 +446,8 @@ def list_wrong_book_page(
     page = max(1, int(page))
     page_size = max(1, int(page_size))
     rows = conn.execute(
-        f"SELECT * FROM wrong_book{where} ORDER BY {column} DESC, id DESC LIMIT ? OFFSET ?",
+        f"SELECT * FROM wrong_book{where} "
+        f"ORDER BY {column} DESC, id DESC LIMIT ? OFFSET ?",
         (*params, page_size, (page - 1) * page_size),
     ).fetchall()
     return {

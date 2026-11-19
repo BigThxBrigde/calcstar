@@ -65,7 +65,10 @@ def grade_answers(
                 expression=question.expression,
                 answer=question.answer,
                 user_answer=user_answer,
-                is_correct=user_answer is not None and user_answer == question.answer,
+                is_correct=(
+                    user_answer is not None
+                    and user_answer == question.answer
+                ),
             )
         )
     total = len(records)

@@ -79,7 +79,11 @@ def _esc(value) -> str:
 
 def _summary_cell(label: str, value: str, color: Optional[str] = None) -> str:
     """拼一个概览单元格（标签 + 加粗值，居中）。"""
-    value_html = f'<font color="{color}">{_esc(value)}</font>' if color else _esc(value)
+    value_html = (
+        f'<font color="{color}">{_esc(value)}</font>'
+        if color
+        else _esc(value)
+    )
     return (
         f'<td bgcolor="{_COLOR_BG_SUMMARY}" align="center">'
         f'<font color="{_COLOR_MUTED}" size="2">{_esc(label)}</font><br>'
@@ -95,11 +99,15 @@ def _question_row(question: dict) -> str:
 
     if is_correct == 1:
         row_bg = ""
-        user_cell = f'<font color="{_COLOR_GREEN}"><b>{_esc(user_text)}</b></font>'
+        user_cell = (
+            f'<font color="{_COLOR_GREEN}"><b>{_esc(user_text)}</b></font>'
+        )
         judge = f'<font color="{_COLOR_GREEN}"><b>√</b></font>'
     elif is_correct == 0:
         row_bg = f' bgcolor="{_COLOR_BG_WRONG}"'
-        user_cell = f'<font color="{_COLOR_RED}"><b>{_esc(user_text)}</b></font>'
+        user_cell = (
+            f'<font color="{_COLOR_RED}"><b>{_esc(user_text)}</b></font>'
+        )
         judge = f'<font color="{_COLOR_RED}"><b>×</b></font>'
     else:
         row_bg = ""

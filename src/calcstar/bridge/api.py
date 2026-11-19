@@ -51,11 +51,17 @@ class CalcStarBridge(QObject):
         """
         super().__init__(parent)
         self._practice = (
-            practice_service if practice_service is not None else PracticeService()
+            practice_service
+            if practice_service is not None
+            else PracticeService()
         )
-        self._stats = stats_service if stats_service is not None else StatsService()
+        self._stats = (
+            stats_service if stats_service is not None else StatsService()
+        )
         self._settings = (
-            settings_service if settings_service is not None else SettingsService()
+            settings_service
+            if settings_service is not None
+            else SettingsService()
         )
         self._report_exporter = report_exporter
 
@@ -71,11 +77,16 @@ class CalcStarBridge(QObject):
 
     @staticmethod
     def _respond(callback) -> str:
-        """统一响应信封：成功 {"ok": True, "data": ...}，异常 {"ok": False, "error": ...}。"""
+        """统一响应信封：成功 {"ok": True, "data": ...}，
+        异常 {"ok": False, "error": ...}。"""
         try:
-            return json.dumps({"ok": True, "data": callback()}, ensure_ascii=False)
+            return json.dumps(
+                {"ok": True, "data": callback()}, ensure_ascii=False
+            )
         except Exception as exc:  # 统一兜底：任何业务/解析异常都不外抛
-            return json.dumps({"ok": False, "error": str(exc)}, ensure_ascii=False)
+            return json.dumps(
+                {"ok": False, "error": str(exc)}, ensure_ascii=False
+            )
 
     # ---- 练习流程 ----
 
@@ -83,7 +94,9 @@ class CalcStarBridge(QObject):
     def create_practice(self, payload: str) -> str:
         """创建练习：payload 为参数 JSON（category/range_n/count 等）。"""
         return self._respond(
-            lambda: self._practice.create_practice(self._parse_payload(payload))
+            lambda: self._practice.create_practice(
+                self._parse_payload(payload)
+            )
         )
 
     @pyqtSlot(str, result=str)
@@ -288,7 +301,9 @@ class CalcStarBridge(QObject):
         同步渲染）→ 返回 {path}；取消返回 {cancelled: true}，导出器
         缺席或生成失败返回 ok=False。
         """
-        return self._respond(lambda: self._export_report(self._parse_payload(payload)))
+        return self._respond(
+            lambda: self._export_report(self._parse_payload(payload))
+        )
 
     @pyqtSlot(str, result=str)
     def export_report_pdf(self, payload: str) -> str:

@@ -79,7 +79,9 @@ def _make_question(
 # ---- 四则基本类别的单题生成（直接构造，不依赖拒绝采样） ----
 
 
-def _generate_add(rng: random.Random, config: PracticeConfig, level: int) -> Question | None:
+def _generate_add(
+    rng: random.Random, config: PracticeConfig, level: int
+) -> Question | None:
     """生成一道加法题：操作数与结果均落在 ``[0, N]``。
 
     level 0 额外避免 ``a+0`` / ``0+a``；level 1 放开该限制。
@@ -96,7 +98,9 @@ def _generate_add(rng: random.Random, config: PracticeConfig, level: int) -> Que
     return _make_question((a, b), (_OP_ADD,), a + b)
 
 
-def _generate_sub(rng: random.Random, config: PracticeConfig, level: int) -> Question | None:
+def _generate_sub(
+    rng: random.Random, config: PracticeConfig, level: int
+) -> Question | None:
     """生成一道减法题：操作数与结果（或结果的绝对值）均落在 ``[0, N]``。
 
     level 0 额外避免 ``a-0`` / ``a-a``；level 1 放开该限制。
@@ -126,7 +130,9 @@ def _generate_sub(rng: random.Random, config: PracticeConfig, level: int) -> Que
     return _make_question((a, b), (_OP_SUB,), a - b)
 
 
-def _generate_mul(rng: random.Random, config: PracticeConfig, level: int) -> Question | None:
+def _generate_mul(
+    rng: random.Random, config: PracticeConfig, level: int
+) -> Question | None:
     """生成一道乘法题：因数落在 ``[0, N]`` 且积不超过 ``N``。
 
     level 0 额外避免 0 因子；level 1 放开该限制。
@@ -144,7 +150,9 @@ def _generate_mul(rng: random.Random, config: PracticeConfig, level: int) -> Que
     return _make_question((a, b), (_OP_MUL,), a * b)
 
 
-def _generate_div(rng: random.Random, config: PracticeConfig, level: int) -> Question | None:
+def _generate_div(
+    rng: random.Random, config: PracticeConfig, level: int
+) -> Question | None:
     """生成一道除法题：商落在 ``[1, N]``、除数落在 ``[1, N]`` 且整除。
 
     通过 ``被除数 = 商 × 除数`` 直接构造保证整除，且被除数不超过
@@ -166,14 +174,18 @@ def _generate_div(rng: random.Random, config: PracticeConfig, level: int) -> Que
 # ---- 复合类别的单题生成（每题随机落入其中一种基本类别） ----
 
 
-def _generate_add_sub(rng: random.Random, config: PracticeConfig, level: int) -> Question | None:
+def _generate_add_sub(
+    rng: random.Random, config: PracticeConfig, level: int
+) -> Question | None:
     """生成一道加减法题：加法与减法各约 50%。"""
     if rng.random() < 0.5:
         return _generate_add(rng, config, level)
     return _generate_sub(rng, config, level)
 
 
-def _generate_mul_div(rng: random.Random, config: PracticeConfig, level: int) -> Question | None:
+def _generate_mul_div(
+    rng: random.Random, config: PracticeConfig, level: int
+) -> Question | None:
     """生成一道乘除法题：乘法与除法各约 50%。"""
     if rng.random() < 0.5:
         return _generate_mul(rng, config, level)
@@ -183,7 +195,9 @@ def _generate_mul_div(rng: random.Random, config: PracticeConfig, level: int) ->
 # ---- 三目链式算式（operand_count=3）：三个操作数、两个运算符 ----
 
 
-def _generate_add3(rng: random.Random, config: PracticeConfig, level: int) -> Question | None:
+def _generate_add3(
+    rng: random.Random, config: PracticeConfig, level: int
+) -> Question | None:
     """生成三目加法链 ``a + b + c``：各部分和与结果均落在 ``[0, N]``。
 
     level 0 要求各操作数至少为 1（避免 ``+0``）；level 1 放开。
@@ -202,7 +216,9 @@ def _generate_add3(rng: random.Random, config: PracticeConfig, level: int) -> Qu
     return _make_question((a, b, c), (_OP_ADD, _OP_ADD), a + b + c)
 
 
-def _generate_sub3(rng: random.Random, config: PracticeConfig, level: int) -> Question | None:
+def _generate_sub3(
+    rng: random.Random, config: PracticeConfig, level: int
+) -> Question | None:
     """生成三目减法链 ``a - b - c``。
 
     非负模式要求中间与最终结果均落在 ``[0, N]``（level 0 额外避免
@@ -238,7 +254,9 @@ def _generate_sub3(rng: random.Random, config: PracticeConfig, level: int) -> Qu
     return _make_question((a, b, c), (_OP_SUB, _OP_SUB), a - b - c)
 
 
-def _generate_mul3(rng: random.Random, config: PracticeConfig, level: int) -> Question | None:
+def _generate_mul3(
+    rng: random.Random, config: PracticeConfig, level: int
+) -> Question | None:
     """生成三目乘法链 ``a × b × c``：积不超过 ``N``。
 
     level 0 额外避免 0 因子；level 1 放开该限制。
@@ -259,7 +277,9 @@ def _generate_mul3(rng: random.Random, config: PracticeConfig, level: int) -> Qu
     return _make_question((a, b, c), (_OP_MUL, _OP_MUL), a * b * c)
 
 
-def _generate_div3(rng: random.Random, config: PracticeConfig, level: int) -> Question | None:
+def _generate_div3(
+    rng: random.Random, config: PracticeConfig, level: int
+) -> Question | None:
     """生成三目除法链 ``a ÷ b ÷ c``：从商出发构造保证整除。
 
     level 0 要求除数至少为 2、商至少为 1；level 1 放开除数为 1。
@@ -282,7 +302,9 @@ def _generate_div3(rng: random.Random, config: PracticeConfig, level: int) -> Qu
     quotient = rng.randint(1, n)
     b = rng.randint(1, n // quotient)
     c = rng.randint(1, n // (quotient * b))
-    return _make_question((quotient * b * c, b, c), (_OP_DIV, _OP_DIV), quotient)
+    return _make_question(
+        (quotient * b * c, b, c), (_OP_DIV, _OP_DIV), quotient
+    )
 
 
 def _generate_chain_n(
@@ -316,7 +338,9 @@ def _generate_chain_n(
                     operand = rng.randint(1, n)
                 else:
                     divisors = [
-                        d for d in range(low, min(magnitude, n) + 1) if magnitude % d == 0
+                        d
+                        for d in range(low, min(magnitude, n) + 1)
+                        if magnitude % d == 0
                     ]
                     if not divisors:
                         ok = False
@@ -352,13 +376,18 @@ def _generate_chain_n(
 
 
 def _generate_chain3(
-    rng: random.Random, config: PracticeConfig, level: int, pool: tuple[str, str]
+    rng: random.Random,
+    config: PracticeConfig,
+    level: int,
+    pool: tuple[str, str],
 ) -> Question | None:
     """生成三目双运算符链式算式（保留原有两目池调用约定）。"""
     return _generate_chain_n(rng, config, level, pool, 2)
 
 
-def _generate_add_n(rng: random.Random, config: PracticeConfig, level: int) -> Question | None:
+def _generate_add_n(
+    rng: random.Random, config: PracticeConfig, level: int
+) -> Question | None:
     """生成 config.operand_count 目加法链：各操作数之和不超过 N。
 
     按剩余预算逐项采样，避免多目时随机累加屡屡越界。
@@ -375,10 +404,14 @@ def _generate_add_n(rng: random.Random, config: PracticeConfig, level: int) -> Q
         value = rng.randint(low, hi)
         operands.append(value)
         remaining -= value
-    return _make_question(tuple(operands), (_OP_ADD,) * (count - 1), sum(operands))
+    return _make_question(
+        tuple(operands), (_OP_ADD,) * (count - 1), sum(operands)
+    )
 
 
-def _generate_sub_n(rng: random.Random, config: PracticeConfig, level: int) -> Question | None:
+def _generate_sub_n(
+    rng: random.Random, config: PracticeConfig, level: int
+) -> Question | None:
     """生成 config.operand_count 目减法链：中间与最终结果均为非负。
 
     从结果和 ``count - 1`` 个减数反推首项，保证从左到右每一步都不小于 0。
@@ -400,32 +433,52 @@ def _generate_sub_n(rng: random.Random, config: PracticeConfig, level: int) -> Q
     return _make_question(operands, (_OP_SUB,) * (count - 1), result)
 
 
-def _generate_mul_n(rng: random.Random, config: PracticeConfig, level: int) -> Question | None:
+def _generate_mul_n(
+    rng: random.Random, config: PracticeConfig, level: int
+) -> Question | None:
     """生成 config.operand_count 目乘法链。"""
-    return _generate_chain_n(rng, config, level, (_OP_MUL,), config.operand_count - 1)
+    return _generate_chain_n(
+        rng, config, level, (_OP_MUL,), config.operand_count - 1
+    )
 
 
-def _generate_div_n(rng: random.Random, config: PracticeConfig, level: int) -> Question | None:
+def _generate_div_n(
+    rng: random.Random, config: PracticeConfig, level: int
+) -> Question | None:
     """生成 config.operand_count 目除法链（逐级整除）。"""
-    return _generate_chain_n(rng, config, level, (_OP_DIV,), config.operand_count - 1)
+    return _generate_chain_n(
+        rng, config, level, (_OP_DIV,), config.operand_count - 1
+    )
 
 
-def _generate_add_sub_n(rng: random.Random, config: PracticeConfig, level: int) -> Question | None:
+def _generate_add_sub_n(
+    rng: random.Random, config: PracticeConfig, level: int
+) -> Question | None:
     """生成 config.operand_count 目加减混合链。"""
-    return _generate_chain_n(rng, config, level, _LOW_PRECEDENCE, config.operand_count - 1)
+    return _generate_chain_n(
+        rng, config, level, _LOW_PRECEDENCE, config.operand_count - 1
+    )
 
 
-def _generate_mul_div_n(rng: random.Random, config: PracticeConfig, level: int) -> Question | None:
+def _generate_mul_div_n(
+    rng: random.Random, config: PracticeConfig, level: int
+) -> Question | None:
     """生成 config.operand_count 目乘除混合链。"""
-    return _generate_chain_n(rng, config, level, _HIGH_PRECEDENCE, config.operand_count - 1)
+    return _generate_chain_n(
+        rng, config, level, _HIGH_PRECEDENCE, config.operand_count - 1
+    )
 
 
-def _generate_add_sub3(rng: random.Random, config: PracticeConfig, level: int) -> Question | None:
+def _generate_add_sub3(
+    rng: random.Random, config: PracticeConfig, level: int
+) -> Question | None:
     """生成三目加减混合链：两个运算符各自从 ``{+,-}`` 随机。"""
     return _generate_chain3(rng, config, level, _LOW_PRECEDENCE)
 
 
-def _generate_mul_div3(rng: random.Random, config: PracticeConfig, level: int) -> Question | None:
+def _generate_mul_div3(
+    rng: random.Random, config: PracticeConfig, level: int
+) -> Question | None:
     """生成三目乘除混合链：两个运算符各自从 ``{×,÷}`` 随机。"""
     return _generate_chain3(rng, config, level, _HIGH_PRECEDENCE)
 
@@ -455,7 +508,10 @@ def _random_mixed_operators(rng: random.Random, count: int) -> list[str]:
     纯乘除（如 ``a×b÷c``）的题目。
     """
     while True:
-        operators = [rng.choice((*_LOW_PRECEDENCE, *_HIGH_PRECEDENCE)) for _ in range(count)]
+        operators = [
+            rng.choice((*_LOW_PRECEDENCE, *_HIGH_PRECEDENCE))
+            for _ in range(count)
+        ]
         if any(op in _HIGH_PRECEDENCE for op in operators) and any(
             op in _LOW_PRECEDENCE for op in operators
         ):
@@ -554,7 +610,9 @@ def _evaluate_tokens(tokens: list[int | str]) -> tuple[int, list[int]]:
     return value, intermediates
 
 
-def _generate_mixed(rng: random.Random, config: PracticeConfig, level: int) -> Question | None:
+def _generate_mixed(
+    rng: random.Random, config: PracticeConfig, level: int
+) -> Question | None:
     """生成一道四则混合运算题。
 
     表达式默认含 2–3 个运算符（随机），``config.operand_count >= 3``
@@ -584,7 +642,8 @@ def _generate_mixed(rng: random.Random, config: PracticeConfig, level: int) -> Q
         except _InvalidExpression:
             continue
         if not all(
-            _in_bounds(item, n, config.allow_negative) for item in (*intermediates, value)
+            _in_bounds(item, n, config.allow_negative)
+            for item in (*intermediates, value)
         ):
             continue
         return Question(
@@ -634,7 +693,9 @@ _CATEGORY_GENERATORS_N = {
 # ---- 填空位置：固定末尾、固定在算式中或两种随机 ----
 
 
-def _blank_question(question: Question, rng: random.Random, mode: str) -> Question:
+def _blank_question(
+    question: Question, rng: random.Random, mode: str
+) -> Question:
     """按填空位置模式处理题目。
 
     无论空在中间还是末尾，统一用括号记号 ``( )`` 占位：
@@ -673,7 +734,9 @@ def _blank_question(question: Question, rng: random.Random, mode: str) -> Questi
             parts.append(str(operand))
         expression = " ".join(parts) + " = " + str(question.answer)
     else:
-        tokens = _build_tokens(operands, list(question.operators), question.paren_pos)
+        tokens = _build_tokens(
+            operands, list(question.operators), question.paren_pos
+        )
         expression = _format_tokens(tokens) + " = " + str(question.answer)
     return Question(
         expression=expression,
@@ -731,11 +794,15 @@ def _enumerate_div(config: PracticeConfig) -> list[Question]:
     for quotient in range(1, n + 1):
         for divisor in range(1, n // quotient + 1):
             dividend = quotient * divisor
-            questions.append(_make_question((dividend, divisor), (_OP_DIV,), quotient))
+            questions.append(
+                _make_question((dividend, divisor), (_OP_DIV,), quotient)
+            )
     return questions
 
 
-def _enumerate_all(config: PracticeConfig, rng: random.Random) -> list[Question]:
+def _enumerate_all(
+    config: PracticeConfig, rng: random.Random
+) -> list[Question]:
     """穷举当前约束（级别 1）下全部合法表达式，作为兜底候选。
 
     仅对操作数固定的简单类别实施；混合运算候选空间为指数级，
@@ -796,7 +863,9 @@ def generate_questions(config: PracticeConfig) -> list[Question]:
         generator = generator_n
     elif config.operand_count == OPERAND_COUNT_RANDOM:
 
-        def generator(rng: random.Random, cfg: PracticeConfig, level: int) -> Question | None:
+        def generator(
+            rng: random.Random, cfg: PracticeConfig, level: int
+        ) -> Question | None:
             operand_count = rng.choice((2, 3, 4))
             sub_cfg = replace(cfg, operand_count=operand_count)
             if operand_count == 2:
@@ -807,7 +876,9 @@ def generate_questions(config: PracticeConfig) -> list[Question]:
 
     else:
         generator = generator2
-    max_attempts = _BATCH_ATTEMPTS_BASE + _BATCH_ATTEMPTS_PER_QUESTION * config.count
+    max_attempts = (
+        _BATCH_ATTEMPTS_BASE + _BATCH_ATTEMPTS_PER_QUESTION * config.count
+    )
     for level in (0, 1):
         stall = 0
         attempts = 0

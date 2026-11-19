@@ -150,9 +150,15 @@ def init_db(conn: sqlite3.Connection) -> None:
     )
     # 旧库幂等迁移：sessions 表补齐后增的算式形式两列（有默认值，历史行安全）。
     _ensure_column(
-        conn, "sessions", "blank_position", "blank_position TEXT NOT NULL DEFAULT 'last'"
+        conn,
+        "sessions",
+        "blank_position",
+        "blank_position TEXT NOT NULL DEFAULT 'last'",
     )
     _ensure_column(
-        conn, "sessions", "operand_count", "operand_count INTEGER NOT NULL DEFAULT 0"
+        conn,
+        "sessions",
+        "operand_count",
+        "operand_count INTEGER NOT NULL DEFAULT 0",
     )
     conn.commit()

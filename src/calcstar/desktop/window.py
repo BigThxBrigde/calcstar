@@ -11,7 +11,11 @@ import sys
 from PyQt5.QtCore import QUrl
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWebChannel import QWebChannel
-from PyQt5.QtWebEngineWidgets import QWebEnginePage, QWebEngineProfile, QWebEngineView
+from PyQt5.QtWebEngineWidgets import (
+    QWebEnginePage,
+    QWebEngineProfile,
+    QWebEngineView,
+)
 from PyQt5.QtWidgets import QApplication, QFileDialog, QMainWindow
 
 from calcstar.config import get_icon_path, get_index_html_path
@@ -29,7 +33,9 @@ def _make_report_exporter(window: QMainWindow):
     供 desktop 注入 bridge；用户取消对话框返回 None（不视为错误）。
     """
 
-    def exporter(detail: dict, suggested_filename: str, fmt: str = "pdf") -> str | None:
+    def exporter(
+        detail: dict, suggested_filename: str, fmt: str = "pdf"
+    ) -> str | None:
         from calcstar.desktop.report_exporter import (
             ReportExportError,
             build_default_filename,
@@ -38,7 +44,9 @@ def _make_report_exporter(window: QMainWindow):
         )
 
         format_key = normalize_format(fmt)
-        default_name = suggested_filename or build_default_filename(detail, format_key)
+        default_name = suggested_filename or build_default_filename(
+            detail, format_key
+        )
         filters = {
             "pdf": "PDF 文件 (*.pdf)",
             "png": "PNG 图片 (*.png)",
