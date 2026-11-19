@@ -32,16 +32,24 @@ Unicode true
 Section "安装"
     SetShellVarContext current
 
-    ; 若注册表记录了不同的旧安装目录，先清理旧副本（改安装路径时不会自动搬移）
+    ; 升级流程：只要存在旧版本，先静默卸载旧版，再安装新版。
+    ; 1) 注册表记录的旧目录与本次目标目录不同：先卸载并清理（改安装路径时不会自动搬移）
     ReadRegStr $0 HKCU "Software\${APP_ID}" "InstallDir"
-    StrCmp $0 "" no_old_dir
-    StrCmp $0 "$INSTDIR" no_old_dir
-    IfFileExists "$0\uninstall.exe" 0 no_old_uninstaller
+    StrCmp $0 "" skip_registry_old
+    StrCmp $0 "$INSTDIR" skip_registry_old
+    IfFileExists "$0\uninstall.exe" 0 registry_no_uninstaller
         ExecWait '"$0\uninstall.exe" /S _?=$0'
         Delete "$0\uninstall.exe"
-    no_old_uninstaller:
+    registry_no_uninstaller:
     RMDir /r /REBOOTOK "$0"
-    no_old_dir:
+    skip_registry_old:
+
+    ; 2) 目标目录已有旧版（注册表缺失或路径相同）：同样先卸载再清理，避免覆盖式升级残留旧文件
+    IfFileExists "$INSTDIR\uninstall.exe" 0 skip_target_old
+        ExecWait '"$INSTDIR\uninstall.exe" /S _?=$INSTDIR'
+        Delete "$INSTDIR\uninstall.exe"
+        RMDir /r /REBOOTOK "$INSTDIR"
+    skip_target_old:
 
     SetOutPath "$INSTDIR"
     File /r "..\dist\CalcStar\*.*"
