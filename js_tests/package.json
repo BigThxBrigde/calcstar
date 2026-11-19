@@ -1,0 +1,14 @@
+{
+  "name": "calcstar-js-tests",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CalcStar 前端 JavaScript 单元测试（Jest + jsdom）",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "devDependencies": {
+    "jest": "^30.0.0",
+    "jest-environment-jsdom": "^30.0.0"
+  }
+}

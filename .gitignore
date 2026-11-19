@@ -32,3 +32,7 @@ html.zip
 
 # 日志
 *.log
+
+# Jest / Node
+js_tests/node_modules/
+js_tests/coverage/

@@ -3,13 +3,15 @@
 #   .\build.ps1                  # onedir (default): dist\CalcStar\CalcStar.exe
 #   .\build.ps1 -Mode onefile    # single-file: dist\CalcStar.exe
 #   .\build.ps1 -Pack            # onedir + NSIS: dist\CalcStar-<version>-Setup.exe
+#   .\build.ps1 -SkipTests       # skip pytest/Jest gates before packaging
 
 param(
     [ValidateSet("onedir", "onefile")]
     [string]$Mode = "onedir",
     [switch]$Pack,
     [string]$NsisPath = "",
-    [string]$NsisUrl = ""
+    [string]$NsisUrl = "",
+    [switch]$SkipTests
 )
 
 $ErrorActionPreference = 'Stop'
@@ -53,6 +55,38 @@ if ($needInstall) {
     Write-Host "Installing project and dev dependencies into $venvDir ..."
     & $venvPython -m pip install -e .[dev]
     if ($LASTEXITCODE -ne 0) { Write-Error "pip install failed"; exit 1 }
+}
+
+# Test gates: pytest for the backend, Jest for the web frontend.
+if (-not $SkipTests) {
+    Write-Host "Running Python tests (pytest) ..."
+    & $venvPython -m pytest
+    if ($LASTEXITCODE -ne 0) { Write-Error "pytest failed"; exit 1 }
+
+    $npmCmd = Get-Command npm.cmd -ErrorAction SilentlyContinue
+    if (-not $npmCmd) { $npmCmd = Get-Command npm -ErrorAction SilentlyContinue }
+    if (-not $npmCmd) {
+        Write-Error "npm not found. Install Node.js to run the Jest tests (or pass -SkipTests)."
+        exit 1
+    }
+    $npm = $npmCmd.Source
+
+    $jsTestDir = Join-Path (Get-Location).Path "js_tests"
+    if (-not (Test-Path (Join-Path $jsTestDir "package.json"))) {
+        Write-Error "JS test project not found: $jsTestDir\package.json"
+        exit 1
+    }
+    if (-not (Test-Path (Join-Path $jsTestDir "node_modules\.bin\jest.cmd"))) {
+        Write-Host "Installing JS test dependencies (npm ci) ..."
+        & $npm --prefix $jsTestDir ci --no-audit --no-fund
+        if ($LASTEXITCODE -ne 0) { Write-Error "npm ci failed"; exit 1 }
+    }
+
+    Write-Host "Running JavaScript tests (Jest) ..."
+    & $npm --prefix $jsTestDir test
+    if ($LASTEXITCODE -ne 0) { Write-Error "Jest failed"; exit 1 }
+} else {
+    Write-Host "Skipping pytest/Jest gates (-SkipTests)."
 }
 
 # Pass the pack mode to CalcStar.spec via env var (default onedir)
