@@ -1,16 +1,22 @@
 """tests/desktop：report_exporter 测试。
 
-导出已改为 QTextDocument + QPrinter 同步排版（不再依赖离屏
-QtWebEngine 渲染进程），因此可在测试内以 QApplication 直接验证
-真实 PDF 生成；同时覆盖纯逻辑的默认文件名构造。
+导出已改为 QTextDocument 同步排版（不再依赖离屏 QtWebEngine 渲染
+进程），可在测试内以 QApplication 直接验证真实 PDF / PNG 生成；
+同时覆盖格式归一化与默认文件名构造。
 """
+
+from pathlib import Path
 
 import pytest
 from PyQt5.QtWidgets import QApplication
 
 from calcstar.desktop.report_exporter import (
+    ReportExportError,
     build_default_filename,
+    export_report,
     export_report_pdf,
+    export_report_png,
+    normalize_format,
 )
 
 
@@ -60,6 +66,41 @@ class TestExportReportPdf:
         export_report_pdf(_detail(), str(target))
         assert target.exists()
 
+    def test_appends_pdf_suffix(self, qapp, tmp_path):
+        """另存为对话框未带后缀时自动补 .pdf。"""
+        target = tmp_path / "out"
+        result = export_report_pdf(_detail(), str(target))
+        assert result == str(target.with_name("out.pdf"))
+        assert Path(result).exists()
+
+
+class TestExportReportPng:
+    def test_exports_real_png(self, qapp, tmp_path):
+        """PNG 导出为真实图片文件（宽幅长图，含题目明细）。"""
+        target = tmp_path / "成绩单.png"
+        result = export_report_png(_detail(), str(target))
+        assert result == str(target)
+        assert target.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
+        assert target.stat().st_size > 0
+
+    def test_export_report_dispatches_png_and_adds_suffix(self, qapp, tmp_path):
+        """统一入口按格式分派，并为无后缀目标补 .png。"""
+        target = tmp_path / "nested" / "out"
+        result = export_report(_detail(), str(target), ".PNG")
+        assert result == str(target.with_name("out.png"))
+        assert Path(result).read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
+
+
+class TestNormalizeFormat:
+    def test_accepts_case_and_dot_prefix(self):
+        assert normalize_format(" PDF ") == "pdf"
+        assert normalize_format(".png") == "png"
+        assert normalize_format("") == "pdf"
+
+    def test_rejects_unknown_format(self):
+        with pytest.raises(ReportExportError, match="仅支持 pdf / png"):
+            normalize_format("jpg")
+
 
 class TestBuildDefaultFilename:
     def test_from_space_separated_time(self):
@@ -78,3 +119,9 @@ class TestBuildDefaultFilename:
 
     def test_missing_started_at(self):
         assert build_default_filename("") == "CalcStar成绩单.pdf"
+
+    def test_png_suffix(self):
+        assert build_default_filename("2026-11-13T07:32:00", "png") == (
+            "CalcStar成绩单_20261113-0732.png"
+        )
+        assert build_default_filename("", ".PNG") == "CalcStar成绩单.png"

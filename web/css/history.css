@@ -501,6 +501,11 @@
   background: #FFEFD9;
 }
 
+.his-act-export {
+  border-color: rgba(255, 138, 61, 0.45);
+  background: #FFF9F2;
+}
+
 .his-act-redo:hover {
   border-color: #3E9BFF;
   color: #3E9BFF;

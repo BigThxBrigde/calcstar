@@ -155,6 +155,32 @@
   justify-content: center;
 }
 
+.export-format {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: #FFF6E1;
+  color: var(--ink-soft);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.export-format:focus-within {
+  border-color: var(--orange, #FF8A3D);
+}
+
+.export-format select {
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
 /* ---------- 庆祝星星（仅全对时显示） ---------- */
 .celebrate-star {
   position: absolute;

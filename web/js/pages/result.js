@@ -154,6 +154,12 @@ CS.pages.result = (function () {
       "  </div>" +
       '  <div class="result-actions">' +
       '    <button type="button" class="btn-primary home-btn"><span class="btn-label">返回首页</span>' + ICON_HOME + "</button>" +
+      '    <label class="export-format"><span>格式</span>' +
+      '      <select class="export-format-select" aria-label="导出格式">' +
+      '        <option value="pdf">PDF</option>' +
+      '        <option value="png">PNG 图片</option>' +
+      "      </select>" +
+      "    </label>" +
       '    <button type="button" class="btn-soft export-btn"><span class="btn-label">导出成绩单</span>' + ICON_DOWNLOAD + "</button>" +
       "  </div>" +
       "</div>" +
@@ -188,6 +194,7 @@ CS.pages.result = (function () {
     els.homeBtn = pageEl.querySelector(".home-btn");
     els.exportBtn = pageEl.querySelector(".export-btn");
     els.exportLabel = pageEl.querySelector(".export-btn .btn-label");
+    els.exportFormat = pageEl.querySelector(".export-format-select");
     els.wrongCard = pageEl.querySelector(".wrong-card");
     els.roundBadge = pageEl.querySelector(".round-badge");
     els.wrongList = pageEl.querySelector(".wrong-list");
@@ -466,7 +473,7 @@ CS.pages.result = (function () {
 
   /* ---------- 导出成绩单 ---------- */
 
-  /** 调用后端导出本次练习成绩单 PDF（含逐题明细） */
+  /** 按所选格式调用后端导出本次练习成绩单（含逐题明细） */
   async function exportReport() {
     if (exportingReport || !data) {
       return;
@@ -477,15 +484,20 @@ CS.pages.result = (function () {
       CS.toast.error("找不到练习会话，无法导出");
       return;
     }
+    const format = els.exportFormat ? els.exportFormat.value : "pdf";
 
     exportingReport = true;
     els.exportBtn.disabled = true;
+    if (els.exportFormat) {
+      els.exportFormat.disabled = true;
+    }
     els.exportLabel.textContent = "导出中…";
     CS.mask.show("正在生成成绩单…");
 
     try {
-      const res = await CS.api.callBridge("export_report_pdf", {
-        session_id: sessionId
+      const res = await CS.api.callBridge("export_report", {
+        session_id: sessionId,
+        format: format
       });
       if (res && res.cancelled) {
         CS.toast.info("已取消导出");
@@ -499,6 +511,9 @@ CS.pages.result = (function () {
     } finally {
       exportingReport = false;
       els.exportBtn.disabled = false;
+      if (els.exportFormat) {
+        els.exportFormat.disabled = false;
+      }
       els.exportLabel.textContent = "导出成绩单";
       CS.mask.hide();
     }
