@@ -120,6 +120,22 @@
   - [x] SubTask 19.2: `build.ps1` 增加 `-Mode onedir|onefile` 参数（默认 onedir），打包前清理另一模式的陈旧产物，按模式校验对应产物路径
   - [x] SubTask 19.3: spec/tasks/checklist/README/运行说明同步；两种模式分别打包验证可启动
 
+- [x] Task 20: 错题本分页与管理（后增）
+  - [x] SubTask 20.1: `repositories` / `StatsService` / 桥接层新增 `list_wrong_book_page`、`delete_wrong_book_entry`、`clear_wrong_book`
+  - [x] SubTask 20.2: 错题本前端按设置页每页题数分页，支持单条删除与清空（两步确认）
+  - [x] SubTask 20.3: Node 单测覆盖（后迁入 Jest 工程），spec/checklist/README/运行说明同步
+
+- [x] Task 21: 算式形式扩展（后增修订）
+  - [x] SubTask 21.1: 目数扩展为 2/3/4/自定义 2–10/随机 2、3、4；填空位置扩展为固定末尾/固定在算式中/两种随机
+  - [x] SubTask 21.2: 生成器多目链式与三种填空模式，配置校验与设置页芯片同步
+  - [x] SubTask 21.3: 订正列表限本局并分页、跨页答案保留；Jest 用例覆盖结果页与设置页
+  - [x] SubTask 21.4: 错题本与订正卡同名样式隔离（`wb-*` 命名空间）+ CSS 隔离守卫测试
+
+- [x] Task 22: 前端测试工程（后增）
+  - [x] SubTask 22.1: 独立 Jest + jsdom 工程 `js_tests/`，覆盖 api/router/toast/mask/state/settings/practice/result/history/wrongbook 等模块
+  - [x] SubTask 22.2: `build.ps1` 增加 pytest + Jest 双门禁与 `-SkipTests` 参数
+  - [x] SubTask 22.3: 成绩单导出支持 PDF / PNG 双格式，成绩页与历史行提供两种入口
+
 # Task Dependencies
 - Task 0 已完成
 - Task 1 最先执行（pyproject 与分层骨架是其余任务的基础）
