@@ -32,6 +32,8 @@ function buildForm() {
     '<div id="row-custom-range"></div>' +
     '<input type="text" id="custom-count">' +
     '<div id="row-custom-count"></div>' +
+    '<input type="text" id="custom-operand">' +
+    '<div id="row-custom-operand"></div>' +
     '<input type="text" id="custom-duration">' +
     '<div id="row-custom-duration"></div>' +
     '<button id="start-btn"><span class="btn-label">开始练习</span></button>' +
@@ -53,8 +55,12 @@ function buildForm() {
     '<input type="radio" name="per-page" value="5" checked>' +
     '<input type="radio" name="per-page" value="10">' +
     '<input type="radio" name="operand-count" value="2" checked>' +
+    '<input type="radio" name="operand-count" value="3">' +
+    '<input type="radio" name="operand-count" value="4">' +
+    '<input type="radio" name="operand-count" value="custom">' +
     '<input type="radio" name="operand-count" value="random">' +
     '<input type="radio" name="blank-position" value="last" checked>' +
+    '<input type="radio" name="blank-position" value="middle">' +
     '<input type="radio" name="blank-position" value="any">';
 }
 
@@ -94,6 +100,28 @@ test("默认表单收集为后端约定的 config", function () {
     operand_count: 2,
     blank_position: "last"
   });
+});
+
+test("四目、自定义 2~10 目与固定在算式中的填空位置均可收集", function () {
+  check("operand-count", "custom");
+  document.getElementById("custom-operand").value = "7";
+  check("blank-position", "middle");
+  let result = window.CS.pages.settings.collectConfig();
+  expect(result.ok).toBe(true);
+  expect(result.config.operand_count).toBe(7);
+  expect(result.config.blank_position).toBe("middle");
+
+  check("operand-count", "4");
+  check("blank-position", "last");
+  result = window.CS.pages.settings.collectConfig();
+  expect(result.config.operand_count).toBe(4);
+  expect(result.config.blank_position).toBe("last");
+
+  check("operand-count", "custom");
+  document.getElementById("custom-operand").value = "11";
+  result = window.CS.pages.settings.collectConfig();
+  expect(result.ok).toBe(false);
+  expect(result.message).toMatch(/2~10/);
 });
 
 test("自定义数值、限时与四则混合括号开关均可收集", function () {

@@ -36,6 +36,7 @@ beforeEach(function () {
   reset();
   stubShell();
   responses = {
+    get_settings: function () { return { per_page: 10 }; },
     submit_correction: function () {
       return {
         correction_round: 1,
@@ -63,8 +64,8 @@ beforeEach(function () {
   load("pages/result.js");
 });
 
-function activate() {
-  window.CS.pages.result.activate();
+async function activate() {
+  await window.CS.pages.result.activate();
 }
 
 function inputs() {
@@ -75,8 +76,8 @@ function correctionCalls() {
   return calls.filter(function (c) { return c.method === "submit_correction"; });
 }
 
-test("渲染得分、正确率、用时与错题列表，并标记缓存失效", function () {
-  activate();
+test("渲染得分、正确率、用时与错题列表，并标记缓存失效", async function () {
+  await activate();
 
   expect(document.querySelector(".score-num").textContent).toBe("70");
   const stats = document.querySelectorAll(".result-stats .stat-chip:not(.is-timeout) .chip-value");
@@ -94,12 +95,12 @@ test("渲染得分、正确率、用时与错题列表，并标记缓存失效",
   expect(window.CS.state.wrongBookCache).toBeUndefined();
 });
 
-test("全部答对时展示庆祝态且不渲染订正区", function () {
+test("全部答对时展示庆祝态且不渲染订正区", async function () {
   const data = practice();
   data.result.passed = true;
   data.result.wrong_answers = [];
   window.CS.state.practice = data;
-  activate();
+  await activate();
 
   expect(document.querySelector(".result-title").textContent).toBe("太棒啦，全部答对！");
   expect(document.querySelector(".wrong-card").classList.contains("hidden")).toBe(true);
@@ -108,8 +109,8 @@ test("全部答对时展示庆祝态且不渲染订正区", function () {
   expect(inputs()).toHaveLength(0);
 });
 
-test("订正输入清洗非法字符，回车跳到下一题", function () {
-  activate();
+test("订正输入清洗非法字符，回车跳到下一题", async function () {
+  await activate();
   const input = inputs()[0];
   input.value = "-0012a";
   fire(input, "input");
@@ -121,8 +122,8 @@ test("订正输入清洗非法字符，回车跳到下一题", function () {
   expect(document.activeElement).toBe(inputs()[1]);
 });
 
-test("未填完订正答案时只提示不提交", function () {
-  activate();
+test("未填完订正答案时只提示不提交", async function () {
+  await activate();
   fire(document.querySelector(".correction-btn"), "click");
 
   expect(window.CS.toast.info).toHaveBeenCalledWith("还有 2 题没填订正答案哦！");
@@ -130,9 +131,11 @@ test("未填完订正答案时只提示不提交", function () {
 });
 
 test("订正先返回剩余错题，全部通过后更新状态为 passed", async function () {
-  activate();
+  await activate();
   inputs()[0].value = "2";
   inputs()[1].value = "5";
+  fire(inputs()[0], "input");
+  fire(inputs()[1], "input");
   fire(document.querySelector(".correction-btn"), "click");
   await settle();
 
@@ -150,6 +153,7 @@ test("订正先返回剩余错题，全部通过后更新状态为 passed", asyn
     return { correction_round: 2, all_correct: true, wrong_answers: [] };
   };
   inputs()[0].value = "5";
+  fire(inputs()[0], "input");
   fire(document.querySelector(".correction-btn"), "click");
   await settle();
 
@@ -161,7 +165,7 @@ test("订正先返回剩余错题，全部通过后更新状态为 passed", asyn
 });
 
 test("导出成绩单覆盖成功、取消与失败三种反馈", async function () {
-  activate();
+  await activate();
   const btn = document.querySelector(".export-btn");
 
   fire(btn, "click");
@@ -184,8 +188,8 @@ test("导出成绩单覆盖成功、取消与失败三种反馈", async function
   expect(btn.disabled).toBe(false);
 });
 
-test("返回首页标记缓存失效并跳转设置页", function () {
-  activate();
+test("返回首页标记缓存失效并跳转设置页", async function () {
+  await activate();
   window.CS.pages.result.goHome();
 
   expect(window.CS.state.historyCacheDirty).toBe(true);
@@ -193,9 +197,32 @@ test("返回首页标记缓存失效并跳转设置页", function () {
   expect(window.CS.router.showPage).toHaveBeenCalledWith("page-settings");
 });
 
-test("没有练习结果时展示空状态", function () {
+test("订正列表按设置页每页题数分页且跨页答案保留", async function () {
+  const data = practice();
+  data.result.wrong_answers = Array.from({ length: 12 }, function (_, i) {
+    return { seq: i, expression: i + " + 1 = ( )", answer: i + 1, user_answer: 0 };
+  });
+  window.CS.state.practice = data;
+  responses.get_settings = function () { return { per_page: 5 }; };
+  await activate();
+
+  expect(document.getElementById("correction-pageinfo").textContent)
+    .toBe("第 1 / 3 页 · 共 12 题");
+  expect(inputs()).toHaveLength(5);
+  const first = inputs()[0];
+  first.value = "7";
+  fire(first, "input");
+
+  fire(document.getElementById("correction-next"), "click");
+  expect(document.getElementById("correction-pageinfo").textContent)
+    .toBe("第 2 / 3 页 · 共 12 题");
+  fire(document.getElementById("correction-prev"), "click");
+  expect(inputs()[0].value).toBe("7");
+});
+
+test("没有练习结果时展示空状态", async function () {
   window.CS.state.practice = null;
-  activate();
+  await activate();
 
   expect(document.querySelector(".empty-hint").classList.contains("hidden")).toBe(false);
   expect(document.querySelector(".result-hero").classList.contains("hidden")).toBe(true);
