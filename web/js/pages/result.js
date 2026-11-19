@@ -37,13 +37,18 @@ CS.pages.result = (function () {
     '<svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
 
   const MAX_INPUT_LEN = 8;
+  const DEFAULT_CORRECTION_PER_PAGE = 10;
 
   const pageEl = document.getElementById("page-result");
 
   let data = null;                 // CS.state.practice
   let submittingCorrection = false;
   let exportingReport = false;
-  let correctionInputs = {};       // seq字符串 → input 元素
+  let correctionInputs = {};       // 当前页 seq字符串 → input 元素
+  let correctionValues = {};       // 全部本局错题的已填答案（跨页保留）
+  let lastWrongList = null;        // 用于识别新一轮错题列表
+  let correctionPage = 1;
+  let correctionPageSize = DEFAULT_CORRECTION_PER_PAGE;
   let built = false;
 
   const els = {};
@@ -88,6 +93,37 @@ CS.pages.result = (function () {
     delete CS.state.wrongBookCache;
   }
 
+  /** 订正分页大小取设置页保存的每页题数，读不到时回退当前会话或默认值 */
+  async function ensureCorrectionPageSize() {
+    try {
+      const settings = await CS.api.callBridge("get_settings", {});
+      const saved = Number(settings && settings.per_page);
+      if (Number.isFinite(saved) && saved >= 1) {
+        correctionPageSize = Math.floor(saved);
+        return;
+      }
+    } catch (err) {
+      /* 读取失败时走下方兜底 */
+    }
+    const configured = CS.state.config && Number(CS.state.config.per_page);
+    correctionPageSize = Number.isFinite(configured) && configured >= 1
+      ? Math.floor(configured) : DEFAULT_CORRECTION_PER_PAGE;
+  }
+
+  function correctionTotalPages(total) {
+    return Math.max(1, Math.ceil(total / Math.max(1, correctionPageSize)));
+  }
+
+  function gotoCorrectionPage(target) {
+    const total = ((data && data.result && data.result.wrong_answers) || []).length;
+    const last = correctionTotalPages(total);
+    if (target < 1 || target > last) {
+      return;
+    }
+    correctionPage = target;
+    renderWrongList(data.result.wrong_answers || []);
+  }
+
   /* ---------- 骨架 ---------- */
 
   function buildSkeleton() {
@@ -127,6 +163,11 @@ CS.pages.result = (function () {
       '    <span class="round-badge hidden"></span>' +
       "  </h2>" +
       '  <div class="wrong-list"></div>' +
+      '  <div class="his-pager hidden" id="correction-pager">' +
+      '    <button type="button" class="pager-btn" id="correction-prev">上一页</button>' +
+      '    <span class="pager-info" id="correction-pageinfo"></span>' +
+      '    <button type="button" class="pager-btn" id="correction-next">下一页</button>' +
+      "  </div>" +
       '  <div class="wrong-footer">' +
       '    <button type="button" class="btn-primary correction-btn"><span class="btn-label">提交订正</span>' + ICON_STAR + "</button>" +
       '    <button type="button" class="btn-soft quit-btn">先不订正，回首页</button>' +
@@ -150,6 +191,10 @@ CS.pages.result = (function () {
     els.wrongCard = pageEl.querySelector(".wrong-card");
     els.roundBadge = pageEl.querySelector(".round-badge");
     els.wrongList = pageEl.querySelector(".wrong-list");
+    els.correctionPager = document.getElementById("correction-pager");
+    els.correctionPrev = document.getElementById("correction-prev");
+    els.correctionNext = document.getElementById("correction-next");
+    els.correctionPageInfo = document.getElementById("correction-pageinfo");
     els.correctionBtn = pageEl.querySelector(".correction-btn");
     els.correctionLabel = pageEl.querySelector(".correction-btn .btn-label");
     els.quitBtn = pageEl.querySelector(".quit-btn");
@@ -165,6 +210,12 @@ CS.pages.result = (function () {
     });
     els.correctionBtn.addEventListener("click", function () {
       submitCorrection();
+    });
+    els.correctionPrev.addEventListener("click", function () {
+      gotoCorrectionPage(correctionPage - 1);
+    });
+    els.correctionNext.addEventListener("click", function () {
+      gotoCorrectionPage(correctionPage + 1);
     });
 
     built = true;
@@ -214,12 +265,24 @@ CS.pages.result = (function () {
   }
 
   function renderWrongList(wrongAnswers) {
+    const list = Array.isArray(wrongAnswers) ? wrongAnswers : [];
+    // 新一轮错题（后端返回新数组）重置页码与跨页答案
+    if (list !== lastWrongList) {
+      lastWrongList = list;
+      correctionPage = 1;
+      correctionValues = {};
+    }
     els.wrongList.innerHTML = "";
     correctionInputs = {};
 
-    const list = Array.isArray(wrongAnswers) ? wrongAnswers : [];
+    const totalPages = correctionTotalPages(list.length);
+    if (correctionPage > totalPages) {
+      correctionPage = totalPages;
+    }
+    const start = (correctionPage - 1) * correctionPageSize;
+    const slice = list.slice(start, start + correctionPageSize);
     const frag = document.createDocumentFragment();
-    list.forEach(function (item) {
+    slice.forEach(function (item) {
       frag.appendChild(buildWrongRow(item));
     });
     els.wrongList.appendChild(frag);
@@ -227,6 +290,12 @@ CS.pages.result = (function () {
     const round = Number(data.correctionRound) || 0;
     els.roundBadge.textContent = "已完成 " + round + " 轮订正";
     els.roundBadge.classList.toggle("hidden", round <= 0);
+
+    els.correctionPager.classList.toggle("hidden", list.length <= correctionPageSize);
+    els.correctionPageInfo.textContent =
+      "第 " + correctionPage + " / " + totalPages + " 页 · 共 " + list.length + " 题";
+    els.correctionPrev.disabled = correctionPage <= 1;
+    els.correctionNext.disabled = correctionPage >= totalPages;
   }
 
   function buildWrongRow(item) {
@@ -266,15 +335,17 @@ CS.pages.result = (function () {
     input.placeholder = "再算一遍";
     input.setAttribute("aria-label", "第" + (item.seq + 1) + "题订正答案");
     input.dataset.seq = String(item.seq);
-    correctionInputs[String(item.seq)] = input;
-
     const seqKey = String(item.seq);
+    input.value = correctionValues[seqKey] || "";
+    correctionInputs[seqKey] = input;
+
     const rowEl = row;
     input.addEventListener("input", function () {
       const clean = sanitizeInput(input.value);
       if (clean !== input.value) {
         input.value = clean;
       }
+      correctionValues[seqKey] = clean;
       rowEl.classList.toggle("is-filled", parseAnswer(clean) !== null);
     });
     input.addEventListener("focus", function () {
@@ -327,8 +398,7 @@ CS.pages.result = (function () {
     const corrections = {};
     let missing = 0;
     list.forEach(function (item) {
-      const input = correctionInputs[String(item.seq)];
-      const value = parseAnswer(input ? input.value : "");
+      const value = parseAnswer(correctionValues[String(item.seq)]);
       if (value === null) {
         missing += 1;
       } else {
@@ -357,6 +427,7 @@ CS.pages.result = (function () {
         corrections: corrections
       });
       markCachesDirty();
+      correctionValues = {};
       data.correctionRound = Number(res.correction_round) || 0;
 
       if (res.all_correct || res.passed) {
@@ -442,7 +513,7 @@ CS.pages.result = (function () {
 
   /* ---------- 激活（配合 router 切页） ---------- */
 
-  function activate() {
+  async function activate() {
     if (!pageEl || !pageEl.classList.contains("active")) {
       return;
     }
@@ -450,6 +521,7 @@ CS.pages.result = (function () {
     els.hero.classList.remove("hidden");
     els.wrongCard.classList.remove("hidden");
     els.emptyHint.classList.add("hidden");
+    await ensureCorrectionPageSize();
     render();
   }
 

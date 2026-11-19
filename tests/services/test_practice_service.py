@@ -107,7 +107,7 @@ class TestCreatePractice:
             service.create_practice({
                 "category": "add", "range_n": 10, "count": 5,
                 "duration_minutes": None, "per_page": 5,
-                "blank_position": "middle", "operand_count": 4,
+                "blank_position": "unknown", "operand_count": 11,
             })
         errors = excinfo.value.errors
         assert any("填空位置" in item for item in errors)
@@ -129,6 +129,25 @@ class TestCreatePractice:
         # 末尾空与中间空都用 ( ) 占位：按等号前的部分区分两种题型
         assert any("( )" in expr.partition(" = ")[0] for expr in expressions)
         assert any("( )" not in expr.partition(" = ")[0] for expr in expressions)
+
+    @pytest.mark.parametrize(
+        "blank_position,operand_count", [("middle", 4), ("last", 10), ("any", -1)]
+    )
+    def test_create_with_new_form_options(self, service, blank_position, operand_count):
+        """新增填空模式与 2~10 目/随机目数均可创建练习并落库。"""
+        result = service.create_practice({
+            "category": "add", "range_n": 100, "count": 12,
+            "duration_minutes": None, "per_page": 5,
+            "blank_position": blank_position, "operand_count": operand_count,
+        })
+        questions = result["questions"]
+        assert result["total_count"] == 12
+        detail = get_session_detail(service._conn, result["session_id"])
+        assert detail["blank_position"] == blank_position
+        assert detail["operand_count"] == operand_count
+        if operand_count > 0:
+            for item in questions:
+                assert len(item["expression"].split(" ")) >= operand_count * 2 - 1
 
 
 class TestSubmitPractice:

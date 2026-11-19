@@ -118,17 +118,24 @@
           <div class="chip-group" role="radiogroup" aria-label="算式目数">
             <label class="chip"><input type="radio" name="operand-count" value="2" checked><span>两个数</span></label>
             <label class="chip"><input type="radio" name="operand-count" value="3"><span>三个数</span></label>
+            <label class="chip"><input type="radio" name="operand-count" value="4"><span>四个数</span></label>
+            <label class="chip chip-custom"><input type="radio" name="operand-count" value="custom"><span>自定义</span></label>
             <label class="chip"><input type="radio" name="operand-count" value="random"><span>随机</span></label>
           </div>
-          <span class="option-hint">四则混合至少三个数；选「两个数」时混合按默认规则出题</span>
+          <div class="custom-row hidden" id="row-custom-operand">
+            <label class="custom-label" for="custom-operand">输入算式个数</label>
+            <input class="number-input" id="custom-operand" type="number" min="2" max="10" placeholder="2~10">
+          </div>
+          <span class="option-hint">自定义可填 2~10 个数；随机在 2/3/4 之间；四则混合至少三个数</span>
         </div>
         <div class="option-row option-column">
           <span class="option-name">填空位置</span>
           <div class="chip-group" role="radiogroup" aria-label="填空位置">
             <label class="chip"><input type="radio" name="blank-position" value="last" checked><span>固定末尾</span></label>
-            <label class="chip"><input type="radio" name="blank-position" value="any"><span>位置不定</span></label>
+            <label class="chip"><input type="radio" name="blank-position" value="middle"><span>固定在算式中</span></label>
+            <label class="chip"><input type="radio" name="blank-position" value="any"><span>两种随机</span></label>
           </div>
-          <span class="option-hint">空白统一用 ( ) 占位：固定末尾如 6 + 4 = ( )；位置不定时也可能藏在算式里，如 3 + ( ) - 2 = 5</span>
+          <span class="option-hint">空白统一用 ( ) 占位：固定末尾如 6 + 4 = ( )；固定在算式中如 6 + ( ) = 9；两种随机则每次随机取其一</span>
         </div>
       </div>
 

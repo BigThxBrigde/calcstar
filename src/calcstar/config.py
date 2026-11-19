@@ -42,14 +42,25 @@ DEFAULT_RANGE = 10
 DEFAULT_COUNT = 20
 DEFAULT_PER_PAGE = 10
 
-#: 填空位置模式：固定填在等号右侧（求结果）
+#: 填空位置模式：固定填在等号右侧（求结果），如 6 + 4 = ( )
 BLANK_POSITION_LAST = "last"
-#: 填空位置模式：每题随机填结果或任一操作数
+#: 填空位置模式：固定在算式中隐藏一个操作数，如 6 + ( ) = 9
+BLANK_POSITION_MIDDLE = "middle"
+#: 填空位置模式：两种随机（求结果或隐藏任一操作数）
 BLANK_POSITION_ANY = "any"
-#: 操作数个数取值：表示每题在 2 与 3 之间随机
+#: 合法填空位置模式
+BLANK_POSITIONS = (
+    BLANK_POSITION_LAST,
+    BLANK_POSITION_MIDDLE,
+    BLANK_POSITION_ANY,
+)
+#: 操作数个数取值：表示每题在 2、3、4 之间等概率随机
 OPERAND_COUNT_RANDOM = -1
 #: 操作数个数取值：表示使用各类别的默认目数（两个数）
 OPERAND_COUNT_DEFAULT = 0
+#: 自定义/固定操作数个数的最小值与最大值
+MIN_OPERAND_COUNT = 2
+MAX_OPERAND_COUNT = 10
 
 
 def get_user_data_dir() -> Path:
@@ -119,8 +130,10 @@ def validate_params(
     - duration_minutes 为 None（不限时）或落在
       [MIN_DURATION_MINUTES, MAX_DURATION_MINUTES]；
     - per_page 属于 PER_PAGE_PRESETS，或至少为 1 且不超过 count；
-    - blank_position 取值为 "last"（固定末尾）或 "any"（位置不定）；
-    - operand_count 取值为 0（默认两个数）、2、3 或 -1（随机 2/3）。
+    - blank_position 取值为 "last"（固定末尾）、"middle"（固定在算式中）
+      或 "any"（两种随机）；
+    - operand_count 取值为 0（默认两个数）、2~10（含自定义）或 -1
+      （随机 2/3/4）。
     """
     errors: list[str] = []
 
@@ -154,21 +167,21 @@ def validate_params(
             f"（应属于 {PER_PAGE_PRESETS}，或满足 1 ≤ 每页题数 ≤ 题目数量）"
         )
 
-    if blank_position not in (BLANK_POSITION_LAST, BLANK_POSITION_ANY):
+    if blank_position not in BLANK_POSITIONS:
         errors.append(
             f"填空位置模式无效：{blank_position}"
-            f"（可选值：{BLANK_POSITION_LAST}、{BLANK_POSITION_ANY}）"
+            f"（可选值：{'、'.join(BLANK_POSITIONS)}）"
         )
 
     if operand_count not in (
         OPERAND_COUNT_RANDOM,
         OPERAND_COUNT_DEFAULT,
-        2,
-        3,
+        *range(MIN_OPERAND_COUNT, MAX_OPERAND_COUNT + 1),
     ):
         errors.append(
             f"操作数个数无效：{operand_count}"
-            f"（可选值：{OPERAND_COUNT_DEFAULT}、2、3、{OPERAND_COUNT_RANDOM}）"
+            f"（可选值：{OPERAND_COUNT_DEFAULT}、{MIN_OPERAND_COUNT}~{MAX_OPERAND_COUNT}、"
+            f"{OPERAND_COUNT_RANDOM}）"
         )
 
     return errors

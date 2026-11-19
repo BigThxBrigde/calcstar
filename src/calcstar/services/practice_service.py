@@ -85,7 +85,7 @@ class PracticeService:
             params: 参数字典，键为 category(str)/range_n/count/
                 duration_minutes(None 表示不限时)/allow_negative/
                 include_parentheses/per_page/blank_position("last"|
-                "any")/operand_count(0|2|3|"random")。
+                "middle"|"any")/operand_count(0|2~10|"random")。
 
         Returns:
             会话摘要字典：

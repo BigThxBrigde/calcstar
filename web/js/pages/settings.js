@@ -9,7 +9,8 @@ CS.pages.settings = (function () {
   const LIMITS = {
     range: { min: 1, max: 999, label: "数值范围" },
     count: { min: 1, max: 200, label: "题目数量" },
-    duration: { min: 1, max: 180, label: "限时分钟数" }
+    duration: { min: 1, max: 180, label: "限时分钟数" },
+    operand: { min: 2, max: 10, label: "算式个数" }
   };
 
   const els = {};
@@ -39,7 +40,8 @@ CS.pages.settings = (function () {
       return { ok: true, value: parseIntStrict(choice) };
     }
     const input = $(name === "range" ? "custom-range"
-      : name === "count" ? "custom-count" : "custom-duration");
+      : name === "count" ? "custom-count"
+      : name === "operand-count" ? "custom-operand" : "custom-duration");
     const value = parseIntStrict((input.value || "").trim());
     if (!Number.isInteger(value) || value < limits.min || value > limits.max) {
       return {
@@ -86,17 +88,29 @@ CS.pages.settings = (function () {
       return { ok: false, message: "请选择每页题数" };
     }
 
-    // 算式目数：2/3 为固定目数，"random" 原样传给后端映射为随机
+    // 算式目数：2/3/4 固定，"custom" 取 2~10，"random" 交后端映射为 -1
     const operandCountRaw = getChecked("operand-count");
     if (!operandCountRaw) {
       return { ok: false, message: "请选择算式目数" };
     }
-    const operandCount = operandCountRaw === "random"
-      ? "random"
-      : parseIntStrict(operandCountRaw);
+    let operandCount;
+    if (operandCountRaw === "random") {
+      operandCount = "random";
+    } else if (operandCountRaw === "custom") {
+      const operandRes = collectPresetOrCustom("operand-count", LIMITS.operand);
+      if (!operandRes.ok) {
+        return operandRes;
+      }
+      operandCount = operandRes.value;
+    } else {
+      operandCount = parseIntStrict(operandCountRaw);
+    }
 
-    // 填空位置：last 固定末尾（求结果），any 位置不定
-    const blankPosition = getChecked("blank-position") === "any" ? "any" : "last";
+    // 填空位置：last 固定末尾、middle 固定在算式中、any 两种随机
+    const blankPosition = getChecked("blank-position") || "last";
+    if (["last", "middle", "any"].indexOf(blankPosition) === -1) {
+      return { ok: false, message: "请选择填空位置" };
+    }
 
     const config = {
       category: category,
@@ -198,10 +212,13 @@ CS.pages.settings = (function () {
       setRadio("per-page", String(saved.per_page));
     }
     if (saved.operand_count !== null && saved.operand_count !== undefined) {
-      setRadio(
-        "operand-count",
-        saved.operand_count === "random" ? "random" : String(saved.operand_count)
-      );
+      const count = saved.operand_count;
+      if (count === "random" || count === -1) {
+        setRadio("operand-count", "random");
+      } else if (Number.isInteger(count) && count >= LIMITS.operand.min
+                 && count <= LIMITS.operand.max) {
+        applyPresetOrCustom("operand-count", "custom-operand", count);
+      }
     }
     if (saved.blank_position) {
       setRadio("blank-position", saved.blank_position);
@@ -285,6 +302,7 @@ CS.pages.settings = (function () {
 
     wireCustomGroup("range", "row-custom-range", "custom-range");
     wireCustomGroup("count", "row-custom-count", "custom-count");
+    wireCustomGroup("operand-count", "row-custom-operand", "custom-operand");
     wireCustomGroup("duration", "row-custom-duration", "custom-duration");
 
     els.startBtn.addEventListener("click", startPractice);

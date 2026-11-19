@@ -425,14 +425,14 @@ def test_mixed_three_operands_has_two_operators():
         assert any(op in "×÷" for op in question.operators)
 
 
-def test_operand_count_random_mixes_two_and_three():
-    """operand_count=-1 时每题随机两目或三目，两种均会出现。"""
+def test_operand_count_random_mixes_two_three_four():
+    """operand_count=-1 时每题在两目/三目/四目间等概率随机，三种均会出现。"""
     questions = generate_questions(
         make_config(OperationCategory.ADD_SUB, range_n=30, count=80, seed=41,
                     operand_count=-1)
     )
     sizes = {len(question.operands) for question in questions}
-    assert sizes == {2, 3}
+    assert sizes == {2, 3, 4}
     for question in questions:
         assert len(question.operators) == len(question.operands) - 1
         value, _ = evaluate_expression(question.expression)
@@ -514,3 +514,35 @@ def test_blank_position_any_reproducible():
     config = make_config(OperationCategory.ADD, range_n=20, count=30, seed=59,
                          blank_position="any")
     assert generate_questions(config) == generate_questions(config)
+
+
+@pytest.mark.parametrize("operand_count", [4, 7, 10])
+@pytest.mark.parametrize(
+    "category", _ALL_CATEGORIES, ids=[category.value for category in _ALL_CATEGORIES]
+)
+def test_custom_operand_count_structure_and_consistency(category, operand_count):
+    """4~10 目：操作数/运算符数量正确，求值与答案一致且落在范围内。"""
+    questions = generate_questions(
+        make_config(category, range_n=100, count=10, seed=61,
+                    operand_count=operand_count)
+    )
+    assert len(questions) == 10, (category, operand_count)
+    for question in questions:
+        assert len(question.operands) == operand_count, question.expression
+        assert len(question.operators) == operand_count - 1, question.expression
+        value, _ = evaluate_expression(question.expression)
+        assert value == question.answer, question.expression
+        assert 0 <= value <= 100
+        assert all(0 <= operand <= 100 for operand in question.operands)
+
+
+def test_blank_position_middle_always_hides_operand():
+    """固定在算式中：每题都隐藏一个操作数，等号后给出原结果。"""
+    questions = generate_questions(
+        make_config(OperationCategory.ADD_SUB, range_n=20, count=40, seed=67,
+                    blank_position="middle")
+    )
+    assert len(questions) == 40
+    for question in questions:
+        _assert_hidden_operand_question(question, 20)
+    assert len({question.expression for question in questions}) == 40

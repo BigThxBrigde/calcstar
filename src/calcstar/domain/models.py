@@ -50,10 +50,11 @@ class PracticeConfig:
         per_page: 每页展示的题目数量。
         seed: 随机种子；指定后生成结果完全可复现，便于测试。
         blank_position: 填空位置模式；``"last"`` 固定填等号右侧
-            （求结果），``"any"`` 每题随机填结果或任一操作数。
+            （求结果），``"middle"`` 固定在算式中隐藏一个操作数，
+            ``"any"`` 两种随机。
         operand_count: 每题操作数个数；0 表示默认两个数（混合运算
-            保持原随机 2–3 个运算符），2/3 表示固定目数，
-            :data:`OPERAND_COUNT_RANDOM`（-1）表示每题随机 2 或 3。
+            保持原随机 2–3 个运算符），2~10 表示固定目数（自定义），
+            :data:`OPERAND_COUNT_RANDOM`（-1）表示每题随机 2/3/4。
     """
 
     category: OperationCategory

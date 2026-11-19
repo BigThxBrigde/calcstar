@@ -18,8 +18,14 @@
 from __future__ import annotations
 
 import random
+from dataclasses import replace
 
-from calcstar.config import OPERAND_COUNT_RANDOM, OperationCategory
+from calcstar.config import (
+    BLANK_POSITION_LAST,
+    BLANK_POSITION_MIDDLE,
+    OPERAND_COUNT_RANDOM,
+    OperationCategory,
+)
 from calcstar.domain.models import PracticeConfig, Question
 
 #: 加法显示符号
@@ -278,19 +284,23 @@ def _generate_div3(rng: random.Random, config: PracticeConfig, level: int) -> Qu
     return _make_question((quotient * b * c, b, c), (_OP_DIV, _OP_DIV), quotient)
 
 
-def _generate_chain3(
-    rng: random.Random, config: PracticeConfig, level: int, pool: tuple[str, str]
+def _generate_chain_n(
+    rng: random.Random,
+    config: PracticeConfig,
+    level: int,
+    pool: tuple[str, ...],
+    count: int,
 ) -> Question | None:
-    """生成三目双运算符链式算式（同级运算从左到右依次求值）。
+    """生成 ``count + 1`` 目、``count`` 个运算符的链式算式。
 
-    两个运算符均从 ``pool``（``{+,-}`` 或 ``{×,÷}``）随机取得。
-    操作数逐项采样：乘法按剩余空间收缩上界、除法从当前值的因子
-    中选取以保证整除；每个中间结果与最终结果均落在有效范围内。
-    不满足约束即拒绝重试，重试耗尽返回 ``None``。
+    运算符均从 ``pool`` 随机取得（单元素池即固定运算），同级运算
+    从左到右依次求值。操作数逐项采样：乘法按剩余空间收缩上界、
+    除法从当前值的因子中选取以保证整除；每个中间结果与最终结果
+    均落在有效范围内。不满足约束即拒绝重试，耗尽返回 ``None``。
     """
     n = config.range_n
     for _ in range(_MIXED_ATTEMPTS):
-        operators = (rng.choice(pool), rng.choice(pool))
+        operators = tuple(rng.choice(pool) for _ in range(count))
         cur = rng.randint(1 if level == 0 else 0, n)
         operands: list[int] = [cur]
         ok = True
@@ -338,6 +348,75 @@ def _generate_chain3(
             continue
         return _make_question(tuple(operands), operators, cur)
     return None
+
+
+def _generate_chain3(
+    rng: random.Random, config: PracticeConfig, level: int, pool: tuple[str, str]
+) -> Question | None:
+    """生成三目双运算符链式算式（保留原有两目池调用约定）。"""
+    return _generate_chain_n(rng, config, level, pool, 2)
+
+
+def _generate_add_n(rng: random.Random, config: PracticeConfig, level: int) -> Question | None:
+    """生成 config.operand_count 目加法链：各操作数之和不超过 N。
+
+    按剩余预算逐项采样，避免多目时随机累加屡屡越界。
+    """
+    n = config.range_n
+    count = config.operand_count
+    low = 1 if level == 0 else 0
+    operands: list[int] = []
+    remaining = n
+    for index in range(count):
+        hi = remaining - (count - index - 1) * low
+        if hi < low:
+            return None
+        value = rng.randint(low, hi)
+        operands.append(value)
+        remaining -= value
+    return _make_question(tuple(operands), (_OP_ADD,) * (count - 1), sum(operands))
+
+
+def _generate_sub_n(rng: random.Random, config: PracticeConfig, level: int) -> Question | None:
+    """生成 config.operand_count 目减法链：中间与最终结果均为非负。
+
+    从结果和 ``count - 1`` 个减数反推首项，保证从左到右每一步都不小于 0。
+    """
+    n = config.range_n
+    count = config.operand_count
+    low = 1 if level == 0 else 0
+    tail: list[int] = []
+    remaining = n
+    for index in range(count - 1):
+        hi = remaining - (count - index - 2) * low
+        if hi < low:
+            return None
+        value = rng.randint(low, hi)
+        tail.append(value)
+        remaining -= value
+    result = rng.randint(0, remaining)
+    operands = (result + sum(tail), *tail)
+    return _make_question(operands, (_OP_SUB,) * (count - 1), result)
+
+
+def _generate_mul_n(rng: random.Random, config: PracticeConfig, level: int) -> Question | None:
+    """生成 config.operand_count 目乘法链。"""
+    return _generate_chain_n(rng, config, level, (_OP_MUL,), config.operand_count - 1)
+
+
+def _generate_div_n(rng: random.Random, config: PracticeConfig, level: int) -> Question | None:
+    """生成 config.operand_count 目除法链（逐级整除）。"""
+    return _generate_chain_n(rng, config, level, (_OP_DIV,), config.operand_count - 1)
+
+
+def _generate_add_sub_n(rng: random.Random, config: PracticeConfig, level: int) -> Question | None:
+    """生成 config.operand_count 目加减混合链。"""
+    return _generate_chain_n(rng, config, level, _LOW_PRECEDENCE, config.operand_count - 1)
+
+
+def _generate_mul_div_n(rng: random.Random, config: PracticeConfig, level: int) -> Question | None:
+    """生成 config.operand_count 目乘除混合链。"""
+    return _generate_chain_n(rng, config, level, _HIGH_PRECEDENCE, config.operand_count - 1)
 
 
 def _generate_add_sub3(rng: random.Random, config: PracticeConfig, level: int) -> Question | None:
@@ -477,8 +556,8 @@ def _evaluate_tokens(tokens: list[int | str]) -> tuple[int, list[int]]:
 def _generate_mixed(rng: random.Random, config: PracticeConfig, level: int) -> Question | None:
     """生成一道四则混合运算题。
 
-    表达式默认含 2–3 个运算符（随机），``config.operand_count == 3``
-    时固定为 2 个（三个操作数）；严格遵循先乘除后加减；每个
+    表达式默认含 2–3 个运算符（随机），``config.operand_count >= 3``
+    时固定为目数减 1 个运算符；严格遵循先乘除后加减；每个
     除法步骤整除；所有中间结果与最终结果均落在有效范围内
     （``allow_negative=True`` 时允许为负且绝对值不超过 ``N``）。
     ``include_parentheses=True`` 时约半数题目含一层括号。
@@ -486,8 +565,8 @@ def _generate_mixed(rng: random.Random, config: PracticeConfig, level: int) -> Q
     """
     n = config.range_n
     for _ in range(_MIXED_ATTEMPTS):
-        if config.operand_count == 3:
-            operator_count = 2
+        if config.operand_count >= 3:
+            operator_count = config.operand_count - 1
         else:
             operator_count = rng.choice((2, 3))
         paren_pos = None
@@ -539,23 +618,43 @@ _CATEGORY_GENERATORS3 = {
     OperationCategory.MIXED: _generate_mixed,
 }
 
+#: 类别 -> 4~10 目单题生成函数（目数取 config.operand_count）
+_CATEGORY_GENERATORS_N = {
+    OperationCategory.ADD: _generate_add_n,
+    OperationCategory.SUB: _generate_sub_n,
+    OperationCategory.ADD_SUB: _generate_add_sub_n,
+    OperationCategory.MUL: _generate_mul_n,
+    OperationCategory.DIV: _generate_div_n,
+    OperationCategory.MUL_DIV: _generate_mul_div_n,
+    OperationCategory.MIXED: _generate_mixed,
+}
 
-# ---- 填空位置：固定末尾（求结果）或位置不定 ----
+
+# ---- 填空位置：固定末尾、固定在算式中或两种随机 ----
 
 
 def _blank_question(question: Question, rng: random.Random, mode: str) -> Question:
     """按填空位置模式处理题目。
 
     无论空在中间还是末尾，统一用括号记号 ``( )`` 占位：
-    ``mode == "last"`` 固定求等号右侧结果，表达式形如 ``3 + 5 = ( )``；
-    ``mode == "any"`` 时每题随机——约半数仍求结果，否则随机隐藏一个
-    操作数，该位置以 ``( )`` 占位、等号后给出原结果，答案变为被隐藏
-    操作数的值。混合运算中被隐藏操作数与括号组相邻时回退为求结果，
-    避免括号包住空白。
+
+    - ``mode == "last"``：固定求等号右侧结果，形如 ``3 + 5 = ( )``；
+    - ``mode == "middle"``：固定在算式中隐藏一个操作数，形如
+      ``3 + ( ) - 2 = 5``；
+    - ``mode == "any"``：两种随机，约半数求结果。
+
+    答案为被隐藏操作数的值；混合运算中被隐藏操作数与括号组相邻时
+    回退为求结果，避免括号包住空白。
     """
-    if mode != "any" or not question.operands:
+    if mode == BLANK_POSITION_LAST or not question.operands:
         return question
-    if rng.random() < 0.5:
+    if mode == BLANK_POSITION_MIDDLE:
+        hide = True
+    elif mode == "any":
+        hide = rng.random() >= 0.5
+    else:
+        return question
+    if not hide:
         return question
     idx = rng.randrange(len(question.operands))
     if question.paren_pos is not None and idx in (
@@ -639,8 +738,8 @@ def _enumerate_all(config: PracticeConfig, rng: random.Random) -> list[Question]
     """穷举当前约束（级别 1）下全部合法表达式，作为兜底候选。
 
     仅对操作数固定的简单类别实施；混合运算候选空间为指数级，
-    放宽采样已能覆盖小范围空间，直接返回空列表。三目模式
-    （``operand_count`` 为 3 或随机）下穷举仅覆盖两目组合，同样
+    放宽采样已能覆盖小范围空间，直接返回空列表。多目模式
+    （``operand_count`` 非 0/2）下穷举仅覆盖两目组合，同样
     返回空列表。数值范围过大导致候选格数超出
     :data:`_MAX_ENUM_CELLS` 时同样跳过穷举（此时采样必然充足）。
     返回前随机洗牌，保证补题分布均匀。
@@ -648,7 +747,7 @@ def _enumerate_all(config: PracticeConfig, rng: random.Random) -> list[Question]
     category = config.category
     if (
         category is OperationCategory.MIXED
-        or config.operand_count in (3, OPERAND_COUNT_RANDOM)
+        or config.operand_count not in (0, 2)
         or (config.range_n + 1) ** 2 > _MAX_ENUM_CELLS
     ):
         return []
@@ -679,9 +778,9 @@ def generate_questions(config: PracticeConfig) -> list[Question]:
     死循环。
 
     ``config.operand_count`` 控制算式目数：0（默认两个数，混合
-    保持原随机 2–3 个运算符）、3（三目链式）、-1（每题随机两目
-    或三目）。空白统一用 ``( )`` 占位：求结果时留在等号右侧，
-    ``config.blank_position == "any"`` 时也可能隐藏任一操作数；
+    保持原随机 2–3 个运算符）、2~10（固定目数）、-1（每题在
+    2/3/4 中等概率随机）。空白统一用 ``( )`` 占位：求结果时留在
+    等号右侧，``"middle"`` 隐藏任一操作数，``"any"`` 两种随机；
     判重以最终显示文本为准。
     """
     rng = random.Random(config.seed)
@@ -689,14 +788,21 @@ def generate_questions(config: PracticeConfig) -> list[Question]:
     seen: set[str] = set()
     generator2 = _CATEGORY_GENERATORS[config.category]
     generator3 = _CATEGORY_GENERATORS3[config.category]
+    generator_n = _CATEGORY_GENERATORS_N[config.category]
     if config.operand_count == 3:
         generator = generator3
+    elif config.operand_count >= 4:
+        generator = generator_n
     elif config.operand_count == OPERAND_COUNT_RANDOM:
 
         def generator(rng: random.Random, cfg: PracticeConfig, level: int) -> Question | None:
-            if rng.random() < 0.5:
-                return generator2(rng, cfg, level)
-            return generator3(rng, cfg, level)
+            operand_count = rng.choice((2, 3, 4))
+            sub_cfg = replace(cfg, operand_count=operand_count)
+            if operand_count == 2:
+                return generator2(rng, sub_cfg, level)
+            if operand_count == 3:
+                return generator3(rng, sub_cfg, level)
+            return generator_n(rng, sub_cfg, level)
 
     else:
         generator = generator2
