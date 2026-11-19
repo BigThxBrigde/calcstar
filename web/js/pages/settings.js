@@ -274,7 +274,7 @@ CS.pages.settings = (function () {
       CS.router.showPage("page-practice");
       CS.toast.success("练习已生成，加油哦！");
     } catch (err) {
-      CS.toast.error(err && err.message ? err.message : "生成练习失败，请重试");
+      CS.toast.error(err?.message || "生成练习失败，请重试");
     } finally {
       starting = false;
       els.startBtn.disabled = false;
@@ -317,7 +317,7 @@ CS.pages.settings = (function () {
 
     // 提前连接桥接，缺席时给出明确提示（普通浏览器打开页面时）
     CS.api.ready().catch(function (err) {
-      CS.toast.error(err && err.message ? err.message : "无法连接后端");
+      CS.toast.error(err?.message || "无法连接后端");
     });
   }
 

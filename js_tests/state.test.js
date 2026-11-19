@@ -10,7 +10,12 @@ test("共享状态初始字段完整且为空", function () {
     currentSession: null,
     config: null,
     answers: {},
-    startedAt: null
+    startedAt: null,
+    practice: null,
+    historyCache: null,
+    historyCacheDirty: false,
+    wrongBookCache: null,
+    wrongBookCacheDirty: false
   });
 });
 

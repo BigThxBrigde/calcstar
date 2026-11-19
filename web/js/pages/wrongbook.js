@@ -295,8 +295,8 @@ CS.pages.wrongbook = (function () {
       renderList(data);
     } catch (err) {
       if (!opts.silent) {
-        renderError(err && err.message ? err.message : "请稍后重试");
-        CS.toast.error(err && err.message ? err.message : "加载错题本失败");
+        renderError(err?.message || "请稍后重试");
+        CS.toast.error(err?.message || "加载错题本失败");
       }
     } finally {
       loading = false;
@@ -358,7 +358,7 @@ CS.pages.wrongbook = (function () {
       const target = items.length === 1 && page > 1 ? page - 1 : page;
       await loadPage(target);
     } catch (err) {
-      CS.toast.error(err && err.message ? err.message : "删除失败，请重试");
+      CS.toast.error(err?.message || "删除失败，请重试");
     } finally {
       rowDeleting = false;
     }
@@ -406,7 +406,7 @@ CS.pages.wrongbook = (function () {
       page = 1;
       await loadPage(1);
     } catch (err) {
-      CS.toast.error(err && err.message ? err.message : "清空错题本失败，请重试");
+      CS.toast.error(err?.message || "清空错题本失败，请重试");
     } finally {
       clearing = false;
       els.clearBtn.disabled = false;
@@ -450,7 +450,7 @@ CS.pages.wrongbook = (function () {
       CS.router.showPage("page-practice");
       CS.toast.success("错题练习已生成，把它们全部打败吧！");
     } catch (err) {
-      CS.toast.error(err && err.message ? err.message : "生成错题练习失败，请重试");
+      CS.toast.error(err?.message || "生成错题练习失败，请重试");
     } finally {
       retrying = false;
       retryBtn.disabled = false;

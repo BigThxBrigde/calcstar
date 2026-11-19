@@ -14,5 +14,18 @@ CS.state = {
   answers: {},
 
   /** 练习开始时间戳（毫秒），用于计算用时 */
-  startedAt: null
+  startedAt: null,
+
+  /** 练习结果页数据（result.js 写入） */
+  practice: null,
+
+  /** 历史记录列表缓存（history.js 读写） */
+  historyCache: null,
+  /** 历史记录缓存失效标记（result.js 置位，history.js 消费） */
+  historyCacheDirty: false,
+
+  /** 错题本列表缓存（wrongbook.js 读写） */
+  wrongBookCache: null,
+  /** 错题本缓存失效标记（result.js 置位，wrongbook.js 消费） */
+  wrongBookCacheDirty: false
 };

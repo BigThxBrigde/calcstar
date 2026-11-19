@@ -46,7 +46,7 @@ CS.api = (function () {
     try {
       bridge = await ensureBridge();
     } catch (err) {
-      throw new Error(err && err.message ? err.message : String(err));
+      throw new Error(err?.message || String(err));
     }
 
     if (typeof bridge[method] !== "function") {
@@ -57,7 +57,7 @@ CS.api = (function () {
     try {
       raw = await bridge[method](JSON.stringify(payload || {}));
     } catch (err) {
-      throw new Error("调用后端失败：" + (err && err.message ? err.message : err));
+      throw new Error("调用后端失败：" + (err?.message || err));
     }
 
     let envelope;

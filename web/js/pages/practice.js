@@ -88,7 +88,7 @@ CS.pages.practice = (function () {
   /** 清洗输入：仅保留数字与开头一个负号，去前导零 */
   function sanitizeInput(raw) {
     const negative = raw.charAt(0) === "-";
-    let digits = raw.replace(/[^0-9]/g, "").replace(/^0+(?=\d)/, "");
+    const digits = raw.replace(/[^0-9]/g, "").replace(/^0+(?=\d)/, "");
     return (negative ? "-" : "") + digits;
   }
 
@@ -389,7 +389,7 @@ CS.pages.practice = (function () {
       };
       CS.router.showPage("page-result");
     } catch (err) {
-      CS.toast.error(err && err.message ? err.message : "提交失败，请重试");
+      CS.toast.error(err?.message || "提交失败，请重试");
     } finally {
       submitting = false;
       els.submitBtn.disabled = false;

@@ -332,9 +332,9 @@ CS.pages.history = (function () {
       if (!opts.silent) {
         els.list.innerHTML =
           '<div class="his-empty"><p class="his-empty-title">加载失败啦～</p>' +
-          "<p class=\"his-empty-tip\">" + esc(err && err.message ? err.message : "请稍后重试") + "</p></div>";
+          "<p class=\"his-empty-tip\">" + esc(err?.message || "请稍后重试") + "</p></div>";
         els.pager.classList.add("hidden");
-        CS.toast.error(err && err.message ? err.message : "加载历史记录失败");
+        CS.toast.error(err?.message || "加载历史记录失败");
       }
     } finally {
       listLoading = false;
@@ -374,7 +374,7 @@ CS.pages.history = (function () {
       }
     } catch (err) {
       CS.toast.error(
-        err && err.message ? err.message : "导出成绩单失败，请重试"
+        err?.message || "导出成绩单失败，请重试"
       );
     } finally {
       span.textContent = original;
@@ -411,7 +411,7 @@ CS.pages.history = (function () {
       CS.toast.success("已重置本次练习，加油哦！");
     } catch (err) {
       CS.toast.error(
-        err && err.message ? err.message : "重做失败，请重试"
+        err?.message || "重做失败，请重试"
       );
     } finally {
       span.textContent = original;
@@ -466,7 +466,7 @@ CS.pages.history = (function () {
       }
       await loadPage(page, { silent: false });
     } catch (err) {
-      CS.toast.error(err && err.message ? err.message : "删除失败，请重试");
+      CS.toast.error(err?.message || "删除失败，请重试");
     } finally {
       rowDeleting = false;
     }
@@ -512,7 +512,7 @@ CS.pages.history = (function () {
       page = 1;
       await loadPage(1);
     } catch (err) {
-      CS.toast.error(err && err.message ? err.message : "清空历史失败，请重试");
+      CS.toast.error(err?.message || "清空历史失败，请重试");
     } finally {
       clearing = false;
       els.clearBtn.disabled = false;
@@ -577,8 +577,8 @@ CS.pages.history = (function () {
     } catch (err) {
       els.detailQuestions.innerHTML =
         '<div class="his-empty"><p class="his-empty-title">明细加载失败啦～</p>' +
-        "<p class=\"his-empty-tip\">" + esc(err && err.message ? err.message : "请稍后重试") + "</p></div>";
-      CS.toast.error(err && err.message ? err.message : "加载练习明细失败");
+        "<p class=\"his-empty-tip\">" + esc(err?.message || "请稍后重试") + "</p></div>";
+      CS.toast.error(err?.message || "加载练习明细失败");
     } finally {
       detailLoading = false;
     }

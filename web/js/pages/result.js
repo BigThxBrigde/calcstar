@@ -452,7 +452,7 @@ CS.pages.result = (function () {
         focusFirstCorrectionInput();
       }
     } catch (err) {
-      CS.toast.error(err && err.message ? err.message : "提交订正失败，请重试");
+      CS.toast.error(err?.message || "提交订正失败，请重试");
     } finally {
       submittingCorrection = false;
       els.correctionBtn.disabled = false;
@@ -508,7 +508,7 @@ CS.pages.result = (function () {
         CS.toast.error("导出失败，请重试");
       }
     } catch (err) {
-      CS.toast.error(err && err.message ? err.message : "导出失败，请重试");
+      CS.toast.error(err?.message || "导出失败，请重试");
     } finally {
       exportingReport = false;
       els.exportBtn.disabled = false;
