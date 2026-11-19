@@ -15,6 +15,7 @@ CS.pages.settings = (function () {
 
   const els = {};
   let starting = false;
+  let inited = false;
 
   function $(id) {
     return document.getElementById(id);
@@ -282,6 +283,10 @@ CS.pages.settings = (function () {
   }
 
   function init() {
+    if (inited) {
+      return;
+    }
+    inited = true;
     els.allowNegative = $("allow-negative");
     els.parentheses = $("with-parentheses");
     els.rowParentheses = $("row-parentheses");

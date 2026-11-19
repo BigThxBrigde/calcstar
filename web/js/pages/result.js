@@ -120,8 +120,9 @@ CS.pages.result = (function () {
     if (target < 1 || target > last) {
       return;
     }
+    const wrongAnswers = (data && data.result && data.result.wrong_answers) || [];
     correctionPage = target;
-    renderWrongList(data.result.wrong_answers || []);
+    renderWrongList(wrongAnswers);
   }
 
   /* ---------- 骨架 ---------- */

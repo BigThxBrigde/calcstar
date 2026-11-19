@@ -37,6 +37,7 @@ CS.pages = CS.pages || {};
 CS.pages.history = (function () {
   const PAGE_SIZE = 10;
   const MAX_PAGES = 9999;
+  const CONFIRM_MS = 4000;  // 二次确认按钮自动复位时长
 
   const CATEGORY_LABELS = {
     add: "加法",
@@ -59,6 +60,7 @@ CS.pages.history = (function () {
   let deleteArmedSpan = null; // 删除二次确认中的按钮
   let deleteTimer = null;     // 删除确认自动复位延时器
   let clearTimer = null;
+  let clearing = false;     // 清空历史进行中（防并发）
   let rowExporting = false; // 行级成绩单导出进行中（防并发）
 
   function $(id) {
@@ -237,7 +239,7 @@ CS.pages.history = (function () {
       const cls = (Number(row.passed) === 1) ? " is-pass" : "";
       return (
         '<button type="button" class="his-row' + cls + '" role="listitem" data-session-id="' + Number(row.id) + '"' +
-        ' aria-label="查看 ' + formatDateTime(row.started_at) + " " + (CATEGORY_LABELS[row.category] || "") + ' 的练习明细">' +
+        ' aria-label="查看 ' + esc(formatDateTime(row.started_at)) + " " + esc(CATEGORY_LABELS[row.category] || "") + ' 的练习明细">' +
         '  <span class="his-cell his-time">' + esc(formatDateTime(row.started_at)) + "</span>" +
         "  <span class=\"his-cell\">" + categoryChip(row.category) + "</span>" +
         '  <span class="his-cell">' + esc(formatRange(row.range_n)) + "</span>" +
@@ -450,7 +452,7 @@ CS.pages.history = (function () {
       }
       deleteTimer = setTimeout(function () {
         disarmRowDelete(span);
-      }, 4000);
+      }, CONFIRM_MS);
       return;
     }
 
@@ -483,6 +485,9 @@ CS.pages.history = (function () {
 
   /** 两步确认后清空全部练习历史（错题本保留） */
   async function clearHistory() {
+    if (clearing || detailLoading || listLoading) {
+      return;
+    }
     if (!clearArmed) {
       clearArmed = true;
       els.clearBtn.textContent = "再点一次确认清空";
@@ -490,11 +495,13 @@ CS.pages.history = (function () {
       if (clearTimer) {
         clearTimeout(clearTimer);
       }
-      clearTimer = setTimeout(disarmClear, 4000);
+      clearTimer = setTimeout(disarmClear, CONFIRM_MS);
       return;
     }
     disarmClear();
 
+    clearing = true;
+    els.clearBtn.disabled = true;
     try {
       const res = await CS.api.callBridge("clear_history", {});
       CS.state.historyCache = null;
@@ -503,9 +510,12 @@ CS.pages.history = (function () {
         "已清空 " + (Number(res.deleted) || 0) + " 次练习记录，错题本保留"
       );
       page = 1;
-      loadPage(1);
+      await loadPage(1);
     } catch (err) {
       CS.toast.error(err && err.message ? err.message : "清空历史失败，请重试");
+    } finally {
+      clearing = false;
+      els.clearBtn.disabled = false;
     }
   }
 

@@ -28,6 +28,10 @@ CS.api = (function () {
         }
       });
     });
+    // 瞬时失败（如桥接尚未注册）不缓存，允许后续调用重试。
+    bridgePromise.catch(function () {
+      bridgePromise = null;
+    });
     return bridgePromise;
   }
 
