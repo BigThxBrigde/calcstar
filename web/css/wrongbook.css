@@ -83,7 +83,7 @@
 }
 
 /* ---------- 错题本卡片 ---------- */
-.wrong-card {
+.wb-card {
   padding: 20px 24px;
 }
 
@@ -198,8 +198,8 @@
 }
 
 /* ---------- 列表 ---------- */
-.wrong-columns,
-.wrong-row {
+.wb-columns,
+.wb-row {
   display: grid;
   grid-template-columns:
     minmax(170px, 2fr) minmax(96px, 1fr) minmax(96px, 1fr) minmax(140px, 1.4fr)
@@ -208,7 +208,7 @@
   gap: 10px;
 }
 
-.wrong-columns {
+.wb-columns {
   margin-top: 14px;
   padding: 6px 16px;
   color: var(--ink-soft);
@@ -216,12 +216,12 @@
   font-weight: 800;
 }
 
-.wrong-columns span:not(:first-child),
-.wrong-row span:not(.wrong-expr) {
+.wb-columns span:not(:first-child),
+.wb-row span:not(.wrong-expr) {
   text-align: center;
 }
 
-.wrong-row {
+.wb-row {
   margin-top: 8px;
   padding: 14px 16px;
   border: 2px solid var(--line);
@@ -232,15 +232,15 @@
   font-weight: 700;
 }
 
-.wrong-row:nth-child(3n + 1) {
+.wb-row:nth-child(3n + 1) {
   border-left: 5px solid var(--orange);
 }
 
-.wrong-row:nth-child(3n + 2) {
+.wb-row:nth-child(3n + 2) {
   border-left: 5px solid var(--blue);
 }
 
-.wrong-row:nth-child(3n) {
+.wb-row:nth-child(3n) {
   border-left: 5px solid var(--purple);
 }
 
@@ -296,11 +296,11 @@
 }
 
 /* ---------- 分页 / 清空（复用 history.css 的 .his-pager / .his-clear-row） ---------- */
-.wrong-card .his-pager {
+.wb-card .his-pager {
   margin-top: 16px;
 }
 
-.wrong-card .his-clear-row {
+.wb-card .his-clear-row {
   margin-top: 12px;
 }
 
@@ -374,19 +374,19 @@
 
 /* ---------- 窄屏兜底：行内横向滚动 ---------- */
 @media (max-width: 1023px) {
-  .wrong-columns,
-  .wrong-row {
+  .wb-columns,
+  .wb-row {
     grid-template-columns: none;
     grid-auto-flow: column;
     justify-content: start;
   }
 
-  .wrong-card {
+  .wb-card {
     overflow-x: auto;
   }
 
-  .wrong-columns,
-  .wrong-row {
+  .wb-columns,
+  .wb-row {
     min-width: 560px;
   }
 }

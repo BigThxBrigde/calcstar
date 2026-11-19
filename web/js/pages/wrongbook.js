@@ -106,7 +106,7 @@ CS.pages.wrongbook = (function () {
       "  </div>" +
       "</div>" +
 
-      '<div class="card wrong-card">' +
+      '<div class="card wb-card">' +
       '  <h2 class="card-title">' +
       '    <svg class="ticon" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>' +
       "    错题本" +
@@ -122,7 +122,7 @@ CS.pages.wrongbook = (function () {
       "      🎯 重新练习" +
       "    </button>" +
       "  </div>" +
-      '  <div class="wrong-columns" aria-hidden="true">' +
+      '  <div class="wb-columns" aria-hidden="true">' +
       "    <span>算式</span><span>正确答案</span><span>错误次数</span><span>最近做错</span><span>操作</span>" +
       "  </div>" +
       '  <div id="wrong-list" role="list"></div>' +
@@ -204,7 +204,7 @@ CS.pages.wrongbook = (function () {
 
     const rows = items.map(function (row) {
       return (
-        '<div class="wrong-row" role="listitem">' +
+        '<div class="wb-row" role="listitem">' +
         '  <span class="wrong-expr">' + esc(row.expression) + "</span>" +
         '  <span class="wrong-answer"><b>' + esc(row.answer) + "</b></span>" +
         '  <span class="wrong-count"><i class="wrong-count-num">' + esc(Number(row.wrong_count) || 0) + "</i> 次</span>" +
