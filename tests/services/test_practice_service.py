@@ -81,7 +81,8 @@ class TestCreatePractice:
         assert result["total_count"] == 20
         assert len(result["questions"]) == 20
         assert [q["seq"] for q in result["questions"]] == list(range(20))
-        assert all(set(q) == {"seq", "expression"} for q in result["questions"])
+        assert all(set(q) == {"seq", "expression"}
+                   for q in result["questions"])
         assert result["per_page"] == 5
         assert result["total_pages"] == 4
         assert result["duration_seconds"] == 300
@@ -128,12 +129,15 @@ class TestCreatePractice:
         assert any(expr.count("+") == 1 for expr in expressions)
         # 末尾空与中间空都用 ( ) 占位：按等号前的部分区分两种题型
         assert any("( )" in expr.partition(" = ")[0] for expr in expressions)
-        assert any("( )" not in expr.partition(" = ")[0] for expr in expressions)
+        assert any("( )" not in expr.partition(
+            " = ")[0] for expr in expressions)
 
     @pytest.mark.parametrize(
-        "blank_position,operand_count", [("middle", 4), ("last", 10), ("any", -1)]
+        "blank_position,operand_count", [
+            ("middle", 4), ("last", 10), ("any", -1)]
     )
-    def test_create_with_new_form_options(self, service, blank_position, operand_count):
+    def test_create_with_new_form_options(
+            self, service, blank_position, operand_count):
         """新增填空模式与 2~10 目/随机目数均可创建练习并落库。"""
         result = service.create_practice({
             "category": "add", "range_n": 100, "count": 12,
@@ -147,7 +151,8 @@ class TestCreatePractice:
         assert detail["operand_count"] == operand_count
         if operand_count > 0:
             for item in questions:
-                assert len(item["expression"].split(" ")) >= operand_count * 2 - 1
+                assert len(item["expression"].split(
+                    " ")) >= operand_count * 2 - 1
 
 
 class TestSubmitPractice:
@@ -337,7 +342,8 @@ class TestSubmitCorrection:
         assert round1["correction_round"] == 1
         assert round1["passed"] is False
 
-        round2 = service.submit_correction(sid, {seqs[1]: answers[seqs[1]] + 5})
+        round2 = service.submit_correction(
+            sid, {seqs[1]: answers[seqs[1]] + 5})
         assert round2["correction_round"] == 1  # 本轮有错不累计
         assert round2["passed"] is False
 

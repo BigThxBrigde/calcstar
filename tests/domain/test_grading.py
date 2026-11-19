@@ -48,7 +48,12 @@ def test_partial_correct_score():
     assert result.correct_count == 1
     assert result.total_count == 4
     assert result.score == 25
-    assert [record.is_correct for record in result.results] == [True, False, False, False]
+    assert [
+        record.is_correct for record in result.results] == [
+        True,
+        False,
+        False,
+        False]
 
 
 def test_score_rounds_half_up():

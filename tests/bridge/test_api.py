@@ -145,7 +145,8 @@ class TestSubmitAndCorrect:
             for q in wrong_detail["data"]["questions"]
             if q["is_correct"] == 0
         }
-        assert {q["expression"] for q in resp["data"]["questions"]} == wrong_set
+        assert {q["expression"]
+                for q in resp["data"]["questions"]} == wrong_set
 
 
 class TestQueries:
@@ -169,7 +170,8 @@ class TestQueries:
             "answers": {str(seq): ans + 7 for seq, ans in answers.items()},
             "duration_seconds": 30,
         }))
-        resp = json.loads(bridge.list_wrong_book(json.dumps({"category": "add"})))
+        resp = json.loads(bridge.list_wrong_book(
+            json.dumps({"category": "add"})))
         assert resp["ok"] is True
         assert len(resp["data"]) == 5
         resp = json.loads(bridge.list_wrong_book("{}"))

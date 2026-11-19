@@ -83,7 +83,8 @@ class TestExportReportPng:
         assert target.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
         assert target.stat().st_size > 0
 
-    def test_export_report_dispatches_png_and_adds_suffix(self, qapp, tmp_path):
+    def test_export_report_dispatches_png_and_adds_suffix(
+            self, qapp, tmp_path):
         """统一入口按格式分派，并为无后缀目标补 .png。"""
         target = tmp_path / "nested" / "out"
         result = export_report(_detail(), str(target), ".PNG")

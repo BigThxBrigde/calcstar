@@ -347,7 +347,8 @@ class TestWrongBookManagement:
         beyond = repositories.list_wrong_book_page(conn, page=9, page_size=2)
         assert beyond["items"] == [] and beyond["total"] == 5
 
-        normalized = repositories.list_wrong_book_page(conn, page=0, page_size=0)
+        normalized = repositories.list_wrong_book_page(
+            conn, page=0, page_size=0)
         assert normalized["page"] == 1 and normalized["page_size"] == 1
 
         filtered = repositories.list_wrong_book_page(
@@ -384,7 +385,8 @@ class TestClearHistory:
         deleted = repositories.clear_history(conn)
         assert deleted == 2
         assert conn.execute("SELECT COUNT(*) FROM sessions").fetchone()[0] == 0
-        assert conn.execute("SELECT COUNT(*) FROM questions").fetchone()[0] == 0
+        assert conn.execute(
+            "SELECT COUNT(*) FROM questions").fetchone()[0] == 0
         assert repositories.get_session_detail(conn, sid1) is None
         assert repositories.get_session_detail(conn, sid2) is None
 
@@ -425,7 +427,11 @@ class TestDeleteSession:
         repositories.submit_answers(conn, session_id, answers,
                                     _graded_for(questions, answers), 60.0)
         repositories.delete_session(conn, session_id)
-        assert [r["expression"] for r in repositories.list_wrong_book(conn)] == ["7-9"]
+        assert [
+            r["expression"]
+            for r in repositories.list_wrong_book(conn)
+        ] == [
+            "7-9"]
 
     def test_delete_missing_session(self, conn):
         """会话不存在时返回 False（幂等）。"""
@@ -466,7 +472,8 @@ class TestResetSession:
     def test_reset_refreshes_started_at(self, conn):
         """重置后 started_at 刷新为当前时间（重做记录排到最新）。"""
         session_id, _ = _new_session(conn)
-        before = repositories.get_session_detail(conn, session_id)["started_at"]
+        before = repositories.get_session_detail(conn, session_id)[
+            "started_at"]
         repositories.reset_session(conn, session_id)
         after = repositories.get_session_detail(conn, session_id)["started_at"]
         assert after >= before
@@ -479,7 +486,11 @@ class TestResetSession:
         repositories.submit_answers(conn, session_id, answers,
                                     _graded_for(questions, answers), 60.0)
         repositories.reset_session(conn, session_id)
-        assert [r["expression"] for r in repositories.list_wrong_book(conn)] == ["7-9"]
+        assert [
+            r["expression"]
+            for r in repositories.list_wrong_book(conn)
+        ] == [
+            "7-9"]
 
     def test_reset_resubmit_updates_same_record(self, conn):
         """重置后再次提交：同一条记录被原地更新，不新增会话。"""
@@ -549,10 +560,14 @@ class TestSessionFormColumns:
         c.commit()
         init_db(c)  # 迁移
         cols = {
-            r["name"] for r in c.execute("PRAGMA table_info(sessions)").fetchall()
+            r["name"]
+            for r in c.execute(
+                "PRAGMA table_info(sessions)"
+            ).fetchall()
         }
         assert {"blank_position", "operand_count"} <= cols
-        row = c.execute("SELECT blank_position, operand_count FROM sessions").fetchone()
+        row = c.execute(
+            "SELECT blank_position, operand_count FROM sessions").fetchone()
         assert row["blank_position"] == "last"
         assert row["operand_count"] == 0
         init_db(c)  # 再次调用幂等

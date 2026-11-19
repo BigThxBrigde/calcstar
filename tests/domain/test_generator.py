@@ -16,7 +16,11 @@ _ALL_CATEGORIES = list(OperationCategory)
 def make_config(category, range_n=20, count=100, **kwargs) -> PracticeConfig:
     """构造练习配置（不限时）。"""
     return PracticeConfig(
-        category=category, range_n=range_n, count=count, duration_minutes=None, **kwargs
+        category=category,
+        range_n=range_n,
+        count=count,
+        duration_minutes=None,
+        **kwargs
     )
 
 
@@ -82,7 +86,8 @@ def evaluate_expression(expression: str) -> tuple[int, list[int]]:
     return values[0], intermediates
 
 
-def assert_in_bounds(value: int, range_n: int, allow_negative: bool = False) -> None:
+def assert_in_bounds(value: int, range_n: int,
+                     allow_negative: bool = False) -> None:
     """断言数值落在有效范围内。"""
     if allow_negative:
         assert -range_n <= value <= range_n
@@ -124,7 +129,11 @@ def test_sub_result_non_negative_by_default():
 def test_sub_allow_negative():
     questions = generate_questions(
         make_config(
-            OperationCategory.SUB, range_n=20, count=100, seed=42, allow_negative=True
+            OperationCategory.SUB,
+            range_n=20,
+            count=100,
+            seed=42,
+            allow_negative=True,
         )
     )
     assert len(questions) == 100
@@ -225,7 +234,11 @@ def test_mixed_with_parentheses():
 def test_mixed_allow_negative_bounds():
     questions = generate_questions(
         make_config(
-            OperationCategory.MIXED, range_n=30, count=50, seed=5, allow_negative=True
+            OperationCategory.MIXED,
+            range_n=30,
+            count=50,
+            seed=5,
+            allow_negative=True,
         )
     )
     for question in questions:
@@ -250,7 +263,11 @@ def test_questions_are_unique():
 
 
 def test_same_seed_reproduces_same_questions():
-    config = make_config(OperationCategory.ADD_SUB, range_n=20, count=30, seed=7)
+    config = make_config(
+        OperationCategory.ADD_SUB,
+        range_n=20,
+        count=30,
+        seed=7)
     assert generate_questions(config) == generate_questions(config)
     config_mixed = make_config(
         OperationCategory.MIXED, range_n=20, count=30, seed=7,
@@ -260,8 +277,16 @@ def test_same_seed_reproduces_same_questions():
 
 
 def test_different_seed_changes_questions():
-    first = generate_questions(make_config(OperationCategory.ADD, count=30, seed=1))
-    second = generate_questions(make_config(OperationCategory.ADD, count=30, seed=2))
+    first = generate_questions(
+        make_config(
+            OperationCategory.ADD,
+            count=30,
+            seed=1))
+    second = generate_questions(
+        make_config(
+            OperationCategory.ADD,
+            count=30,
+            seed=2))
     assert first != second
 
 
@@ -295,7 +320,8 @@ def test_range_one_boundary():
         expressions = [question.expression for question in questions]
         assert len(set(expressions)) == len(expressions), category
         for question in questions:
-            assert all(-1 <= value <= 1 for value in (*question.operands, question.answer))
+            assert all(-1 <= value <= 1 for value in (*
+                       question.operands, question.answer))
             if category is OperationCategory.MIXED:
                 value, intermediates = evaluate_expression(question.expression)
                 assert value == question.answer
@@ -305,18 +331,33 @@ def test_range_one_boundary():
 
 def test_exhausted_space_returns_all_available():
     # 除法范围 2 的全部合法组合只有 1÷1、2÷1、2÷2 三种
-    questions = generate_questions(make_config(OperationCategory.DIV, range_n=2, count=50, seed=4))
+    questions = generate_questions(
+        make_config(
+            OperationCategory.DIV,
+            range_n=2,
+            count=50,
+            seed=4))
     expressions = [question.expression for question in questions]
     assert len(expressions) == 3
     assert len(set(expressions)) == 3
     assert set(expressions) == {"1 ÷ 1 = ( )", "2 ÷ 1 = ( )", "2 ÷ 2 = ( )"}
     # 加法范围 1 的全部组合为 0+0、0+1、1+0
-    questions = generate_questions(make_config(OperationCategory.ADD, range_n=1, count=10, seed=4))
+    questions = generate_questions(
+        make_config(
+            OperationCategory.ADD,
+            range_n=1,
+            count=10,
+            seed=4))
     assert {question.expression for question in questions} == {
         "0 + 0 = ( )", "0 + 1 = ( )", "1 + 0 = ( )"
     }
     # 除法范围 20 的合法空间共 sum(20 // q) 种，count=100 时应全部返回且不重复
-    questions = generate_questions(make_config(OperationCategory.DIV, range_n=20, count=100, seed=4))
+    questions = generate_questions(
+        make_config(
+            OperationCategory.DIV,
+            range_n=20,
+            count=100,
+            seed=4))
     expected_space = sum(20 // quotient for quotient in range(1, 21))
     expressions = [question.expression for question in questions]
     assert len(expressions) == expected_space
@@ -335,7 +376,10 @@ def test_range_boundary_values_respected_for_all_categories():
 
 
 @pytest.mark.parametrize(
-    "category", _ALL_CATEGORIES, ids=[category.value for category in _ALL_CATEGORIES]
+    "category",
+    _ALL_CATEGORIES,
+    ids=[category.value for category in _ALL_CATEGORIES],
+
 )
 def test_expression_format_and_answer_consistency(category):
     questions = generate_questions(
@@ -350,7 +394,10 @@ def test_expression_format_and_answer_consistency(category):
 
 
 @pytest.mark.parametrize(
-    "category", _ALL_CATEGORIES, ids=[category.value for category in _ALL_CATEGORIES]
+    "category",
+    _ALL_CATEGORIES,
+    ids=[category.value for category in _ALL_CATEGORIES],
+
 )
 def test_three_operand_structure(category):
     """三目模式：每题三个操作数、两个运算符，且批量产出充足。"""
@@ -367,13 +414,21 @@ def test_three_operand_structure(category):
 
 
 @pytest.mark.parametrize(
-    "category", _ALL_CATEGORIES, ids=[category.value for category in _ALL_CATEGORIES]
+    "category",
+    _ALL_CATEGORIES,
+    ids=[category.value for category in _ALL_CATEGORIES],
+
 )
 def test_three_operand_bounds_and_consistency(category):
     """三目模式：操作数与结果落在范围内，求值与答案一致。"""
     range_n = 30
     questions = generate_questions(
-        make_config(category, range_n=range_n, count=40, seed=23, operand_count=3)
+        make_config(
+            category,
+            range_n=range_n,
+            count=40,
+            seed=23,
+            operand_count=3)
     )
     for question in questions:
         for operand in question.operands:
@@ -386,7 +441,12 @@ def test_three_operand_bounds_and_consistency(category):
 def test_three_operand_div_is_integral():
     """三目除法链逐级整除，商即答案。"""
     questions = generate_questions(
-        make_config(OperationCategory.DIV, range_n=50, count=40, seed=29, operand_count=3)
+        make_config(
+            OperationCategory.DIV,
+            range_n=50,
+            count=40,
+            seed=29,
+            operand_count=3)
     )
     for question in questions:
         dividend, divisor_b, divisor_c = question.operands
@@ -416,7 +476,12 @@ def test_three_operand_sub_allow_negative():
 def test_mixed_three_operands_has_two_operators():
     """四则混合在 operand_count=3 时固定为两个运算符。"""
     questions = generate_questions(
-        make_config(OperationCategory.MIXED, range_n=30, count=40, seed=37, operand_count=3)
+        make_config(
+            OperationCategory.MIXED,
+            range_n=30,
+            count=40,
+            seed=37,
+            operand_count=3)
     )
     for question in questions:
         assert len(question.operators) == 2, question.expression
@@ -504,7 +569,8 @@ def test_blank_position_any_mixed_avoids_blank_adjacent_to_paren():
             # 空白前一个字符不应是 "("，其后一个字符不应是 ")"
             assert idx == 0 or question.expression[idx - 1] != "("
             end = idx + 3
-            assert end >= len(question.expression) or question.expression[end] != ")"
+            assert end >= len(
+                question.expression) or question.expression[end] != ")"
         _assert_hidden_operand_question(question, 20)
     assert hidden_with_paren > 0
 
@@ -518,9 +584,13 @@ def test_blank_position_any_reproducible():
 
 @pytest.mark.parametrize("operand_count", [4, 7, 10])
 @pytest.mark.parametrize(
-    "category", _ALL_CATEGORIES, ids=[category.value for category in _ALL_CATEGORIES]
+    "category",
+    _ALL_CATEGORIES,
+    ids=[category.value for category in _ALL_CATEGORIES],
+
 )
-def test_custom_operand_count_structure_and_consistency(category, operand_count):
+def test_custom_operand_count_structure_and_consistency(
+        category, operand_count):
     """4~10 目：操作数/运算符数量正确，求值与答案一致且落在范围内。"""
     questions = generate_questions(
         make_config(category, range_n=100, count=10, seed=61,
@@ -529,7 +599,8 @@ def test_custom_operand_count_structure_and_consistency(category, operand_count)
     assert len(questions) == 10, (category, operand_count)
     for question in questions:
         assert len(question.operands) == operand_count, question.expression
-        assert len(question.operators) == operand_count - 1, question.expression
+        assert len(question.operators) == operand_count - \
+            1, question.expression
         value, _ = evaluate_expression(question.expression)
         assert value == question.answer, question.expression
         assert 0 <= value <= 100

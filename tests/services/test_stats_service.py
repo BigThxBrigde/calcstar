@@ -94,7 +94,8 @@ class TestWrongBook:
         """错题聚合、类别筛选与 wrong_count / last_wrong_at 排序。"""
         # add 类错 1 题（wrong_count=1）
         add_session = _create(practice)["session_id"]
-        add_expression = _submit_with_wrong(practice, stats, add_session, wrong_seq=0)
+        add_expression = _submit_with_wrong(
+            practice, stats, add_session, wrong_seq=0)
 
         # sub 类错 1 题后订正仍错（wrong_count=2）
         sub_session = practice.create_practice({
@@ -109,7 +110,8 @@ class TestWrongBook:
         practice.submit_correction(sub_session, {1: answers[1]})  # 仍错 → 累计 2 次
 
         rows = stats.list_wrong_book()
-        assert [row["expression"] for row in rows] == [sub_expression, add_expression]
+        assert [row["expression"]
+                for row in rows] == [sub_expression, add_expression]
         assert rows[0]["wrong_count"] == 2
         assert rows[0]["category"] == "sub"
 
