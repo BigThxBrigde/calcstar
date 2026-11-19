@@ -20,8 +20,8 @@ from calcstar.services.settings_service import SettingsService
 from calcstar.services.stats_service import StatsService
 
 _DBPath = Union[str, Path]
-#: 导出器签名：(会话明细, 建议文件名) -> 保存路径；用户取消返回 None
-_ReportExporter = Callable[[dict, str], Optional[str]]
+#: 导出器签名：(会话明细, 建议文件名, 格式) -> 保存路径；取消返回 None
+_ReportExporter = Callable[[dict, str, str], Optional[str]]
 
 
 class CalcStarBridge(QObject):
@@ -45,7 +45,7 @@ class CalcStarBridge(QObject):
             practice_service: 练习服务实例；None 时按默认数据库路径创建。
             stats_service: 统计服务实例；None 时按默认数据库路径创建。
             settings_service: 设置服务实例；None 时使用默认设置文件路径。
-            report_exporter: 成绩单 PDF 导出器（desktop 层注入）；None 时
+            report_exporter: 成绩单导出器（desktop 层注入）；None 时
                 导出接口返回"不支持"错误。
             parent: Qt 父对象。
         """
@@ -266,24 +266,37 @@ class CalcStarBridge(QObject):
 
     # ---- 成绩单导出 ----
 
+    def _export_report(self, data: dict) -> dict:
+        """按 payload 中的格式执行导出（pdf / png，默认 pdf）。"""
+        if self._report_exporter is None:
+            raise RuntimeError("当前环境不支持导出成绩单")
+        detail = self._stats.get_session_detail(int(data["session_id"]))
+        fmt = str(data.get("format") or "pdf").strip().lower().lstrip(".")
+        if fmt not in ("pdf", "png"):
+            raise ValueError(f"不支持的导出格式：{data.get('format')}（仅支持 pdf / png）")
+        suggested = data.get("filename") or ""
+        path = self._report_exporter(detail, suggested, fmt)
+        if path is None:
+            return {"cancelled": True, "path": None}
+        return {"cancelled": False, "path": str(path)}
+
+    @pyqtSlot(str, result=str)
+    def export_report(self, payload: str) -> str:
+        """导出成绩单：payload 为 {session_id, format?}（format 默认 pdf）。
+
+        查会话明细 → 调用 desktop 注入的导出器（另存为对话框 + 本地
+        同步渲染）→ 返回 {path}；取消返回 {cancelled: true}，导出器
+        缺席或生成失败返回 ok=False。
+        """
+        return self._respond(lambda: self._export_report(self._parse_payload(payload)))
+
     @pyqtSlot(str, result=str)
     def export_report_pdf(self, payload: str) -> str:
-        """导出本次练习成绩单 PDF：payload 为 {session_id}。
-
-        流程：查会话明细 → 调用 desktop 注入的导出器（内含另存为
-        弹窗与离屏渲染）→ 返回 {path}；用户取消对话框返回
-        {cancelled: true}，导出器缺席或生成失败返回 ok=False。
-        """
+        """兼容旧前端：固定以 PDF 格式导出，payload 为 {session_id}。"""
         def run() -> dict:
             data = self._parse_payload(payload)
-            if self._report_exporter is None:
-                raise RuntimeError("当前环境不支持导出成绩单")
-            detail = self._stats.get_session_detail(int(data["session_id"]))
-            suggested = data.get("filename") or ""
-            path = self._report_exporter(detail, suggested)
-            if path is None:
-                return {"cancelled": True, "path": None}
-            return {"cancelled": False, "path": str(path)}
+            data["format"] = "pdf"
+            return self._export_report(data)
 
         return self._respond(run)
 
@@ -302,7 +315,7 @@ def create_bridge(
     Args:
         db_path: 数据库文件路径；None 时使用 config.get_db_path()。
         settings_service: 设置服务实例；None 时使用默认设置文件路径。
-        report_exporter: 成绩单 PDF 导出器（desktop 层注入）。
+        report_exporter: 成绩单导出器（desktop 层注入）。
     """
     return CalcStarBridge(
         practice_service=PracticeService(db_path),

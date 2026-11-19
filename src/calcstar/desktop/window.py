@@ -17,29 +17,35 @@ from calcstar.config import get_icon_path, get_index_html_path
 
 
 def _make_report_exporter(window: QMainWindow):
-    """构造成绩单导出器：弹另存为对话框后离屏渲染 PDF。
+    """构造成绩单导出器：按格式弹另存为对话框后本地同步渲染。
 
     供 desktop 注入 bridge；用户取消对话框返回 None（不视为错误）。
     """
 
-    def exporter(detail: dict, suggested_filename: str) -> str | None:
+    def exporter(detail: dict, suggested_filename: str, fmt: str = "pdf") -> str | None:
         from calcstar.desktop.report_exporter import (
             ReportExportError,
             build_default_filename,
-            export_report_pdf,
+            export_report,
+            normalize_format,
         )
 
-        default_name = suggested_filename or build_default_filename(detail)
+        format_key = normalize_format(fmt)
+        default_name = suggested_filename or build_default_filename(detail, format_key)
+        filters = {
+            "pdf": "PDF 文件 (*.pdf)",
+            "png": "PNG 图片 (*.png)",
+        }
         target, _ = QFileDialog.getSaveFileName(
             window,
             "保存成绩单",
             default_name,
-            "PDF 文件 (*.pdf);;所有文件 (*.*)",
+            f"{filters[format_key]};;所有文件 (*.*)",
         )
         if not target:
             return None
         try:
-            return export_report_pdf(detail, target)
+            return export_report(detail, target, format_key)
         except ReportExportError as exc:
             raise RuntimeError(str(exc)) from exc
 

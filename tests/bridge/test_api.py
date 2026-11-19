@@ -268,11 +268,14 @@ class TestExportReportPdf:
         return data["session_id"]
 
     def test_export_ok(self, tmp_path):
-        """导出器返回路径：ok=True 且 data 含 path。"""
-        b = create_bridge(
-            tmp_path / "calcstar.db",
-            report_exporter=lambda detail, suggested: "C:/out/report.pdf",
-        )
+        """旧接口固定 PDF：ok=True 且导出器收到 pdf 格式。"""
+        seen = {}
+
+        def exporter(detail, suggested, fmt):
+            seen["fmt"] = fmt
+            return "C:/out/report.pdf"
+
+        b = create_bridge(tmp_path / "calcstar.db", report_exporter=exporter)
         try:
             sid = self._submit(b)
             resp = json.loads(b.export_report_pdf(
@@ -281,6 +284,69 @@ class TestExportReportPdf:
             assert resp["ok"] is True
             assert resp["data"]["cancelled"] is False
             assert resp["data"]["path"] == "C:/out/report.pdf"
+            assert seen["fmt"] == "pdf"
+        finally:
+            b._practice._conn.close()
+            b._stats._conn.close()
+
+    def test_export_report_png(self, tmp_path):
+        """新接口按 payload 的 format 分派到 PNG 导出器。"""
+        seen = {}
+
+        def exporter(detail, suggested, fmt):
+            seen["fmt"] = fmt
+            return "C:/out/report.png"
+
+        b = create_bridge(tmp_path / "calcstar.db", report_exporter=exporter)
+        try:
+            sid = self._submit(b)
+            resp = json.loads(b.export_report(
+                json.dumps({"session_id": sid, "format": "png"})
+            ))
+            assert resp["ok"] is True
+            assert resp["data"]["path"] == "C:/out/report.png"
+            assert seen["fmt"] == "png"
+        finally:
+            b._practice._conn.close()
+            b._stats._conn.close()
+
+    def test_export_report_defaults_to_pdf(self, tmp_path):
+        """新接口未传 format 时默认 PDF。"""
+        seen = {}
+
+        def exporter(detail, suggested, fmt):
+            seen["fmt"] = fmt
+            return "C:/out/report.pdf"
+
+        b = create_bridge(tmp_path / "calcstar.db", report_exporter=exporter)
+        try:
+            sid = self._submit(b)
+            resp = json.loads(b.export_report(
+                json.dumps({"session_id": sid})
+            ))
+            assert resp["ok"] is True
+            assert seen["fmt"] == "pdf"
+        finally:
+            b._practice._conn.close()
+            b._stats._conn.close()
+
+    def test_export_report_rejects_unknown_format(self, tmp_path):
+        """非法格式：ok=False，且不会调用导出器。"""
+        called = []
+
+        def exporter(detail, suggested, fmt):
+            called.append(fmt)
+            return "C:/out/report.pdf"
+
+        b = create_bridge(tmp_path / "calcstar.db", report_exporter=exporter)
+        try:
+            sid = self._submit(b)
+            resp = json.loads(b.export_report(
+                json.dumps({"session_id": sid, "format": "jpg"})
+            ))
+            assert resp["ok"] is False
+            assert "不支持的导出格式" in resp["error"]
+            assert called == []
         finally:
             b._practice._conn.close()
             b._stats._conn.close()
@@ -289,7 +355,7 @@ class TestExportReportPdf:
         """用户取消（导出器返回 None）：ok=True 且 cancelled=True。"""
         b = create_bridge(
             tmp_path / "calcstar.db",
-            report_exporter=lambda detail, suggested: None,
+            report_exporter=lambda detail, suggested, fmt: None,
         )
         try:
             sid = self._submit(b)
@@ -305,7 +371,7 @@ class TestExportReportPdf:
 
     def test_export_failure_returns_error(self, tmp_path):
         """导出器抛异常：ok=False 且 error 非空。"""
-        def boom(detail, suggested):
+        def boom(detail, suggested, fmt):
             raise RuntimeError("PDF 生成失败")
 
         b = create_bridge(tmp_path / "calcstar.db", report_exporter=boom)
@@ -333,7 +399,7 @@ class TestExportReportPdf:
         """会话不存在：ok=False。"""
         b = create_bridge(
             tmp_path / "calcstar.db",
-            report_exporter=lambda detail, suggested: "x.pdf",
+            report_exporter=lambda detail, suggested, fmt: "x.pdf",
         )
         try:
             resp = json.loads(b.export_report_pdf(

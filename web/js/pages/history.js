@@ -27,6 +27,8 @@
  *     status/passed 等）
  *   get_session_detail({session_id}) -> 会话行 + questions:
  *     [{seq, expression, answer, user_answer, is_correct, ...}]
+ *   export_report({session_id, format}) -> {path} / {cancelled: true}
+ *     format 为 pdf 或 png，默认 pdf。
  */
 
 window.CS = window.CS || {};
@@ -245,7 +247,8 @@ CS.pages.history = (function () {
         '  <span class="his-cell">' + esc(formatDuration(row.duration_seconds)) + "</span>" +
         '  <span class="his-cell">' + badgeHtml(row) + "</span>" +
         '  <span class="his-cell"><span class="his-actions">' +
-        '<span class="his-act" role="button" data-act="export" data-session-id="' + Number(row.id) + '" title="导出本次成绩单 PDF">导出</span>' +
+        '<span class="his-act his-act-export" role="button" data-act="export" data-session-id="' + Number(row.id) + '" title="导出本次成绩单 PDF">PDF</span>' +
+        '<span class="his-act his-act-export" role="button" data-act="export-png" data-session-id="' + Number(row.id) + '" title="导出本次成绩单 PNG 图片">图片</span>' +
         '<span class="his-act his-act-redo" role="button" data-act="redo" data-session-id="' + Number(row.id) + '" title="按本次的设置重新生成一局练习">重做</span>' +
         '<span class="his-act his-act-del" role="button" data-act="del" data-session-id="' + Number(row.id) + '" title="删除这条练习记录（错题本保留）">删除</span>' +
         "</span></span>" +
@@ -269,8 +272,8 @@ CS.pages.history = (function () {
         ev.stopPropagation();
         const act = span.dataset.act;
         const sessionId = Number(span.dataset.sessionId);
-        if (act === "export") {
-          exportRow(sessionId, span);
+        if (act === "export" || act === "export-png") {
+          exportRow(sessionId, span, act === "export-png" ? "png" : "pdf");
         } else if (act === "redo") {
           redoRow(sessionId, span);
         } else if (act === "del") {
@@ -345,8 +348,8 @@ CS.pages.history = (function () {
 
   /* ---------------- 行级成绩单导出 ---------------- */
 
-  /** 导出某一行的成绩单 PDF（弹出另存为对话框；防并发） */
-  async function exportRow(sessionId, span) {
+  /** 按指定格式导出某一行的成绩单（弹出另存为对话框；防并发） */
+  async function exportRow(sessionId, span, format) {
     if (rowExporting) {
       return;
     }
@@ -356,8 +359,9 @@ CS.pages.history = (function () {
     span.classList.add("is-busy");
     CS.mask.show("正在生成成绩单…");
     try {
-      const res = await CS.api.callBridge("export_report_pdf", {
+      const res = await CS.api.callBridge("export_report", {
         session_id: sessionId,
+        format: format,
       });
       if (res && res.cancelled) {
         CS.toast.info("已取消导出");

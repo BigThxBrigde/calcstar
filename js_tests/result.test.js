@@ -44,7 +44,9 @@ beforeEach(function () {
         wrong_answers: [{ seq: 3, expression: "4 + 1 = ( )", answer: 5, user_answer: 3 }]
       };
     },
-    export_report_pdf: function () { return { path: "D:/reports/s1.pdf" }; }
+    export_report: function (payload) {
+      return { path: payload.format === "png" ? "D:/reports/s1.png" : "D:/reports/s1.pdf" };
+    }
   };
   calls = stubApi(responses);
   window.CS.state = {
@@ -170,22 +172,37 @@ test("导出成绩单覆盖成功、取消与失败三种反馈", async function
 
   fire(btn, "click");
   await settle();
-  expect(calls.filter(function (c) { return c.method === "export_report_pdf"; })[0].payload)
-    .toEqual({ session_id: "s1" });
+  expect(calls.filter(function (c) { return c.method === "export_report"; })[0].payload)
+    .toEqual({ session_id: "s1", format: "pdf" });
   expect(window.CS.mask.show).toHaveBeenCalledWith("正在生成成绩单…");
   expect(window.CS.mask.hide).toHaveBeenCalled();
   expect(window.CS.toast.success).toHaveBeenCalledWith("成绩单已保存：D:/reports/s1.pdf");
 
-  responses.export_report_pdf = function () { return { cancelled: true }; };
+  responses.export_report = function () { return { cancelled: true }; };
   fire(btn, "click");
   await settle();
   expect(window.CS.toast.info).toHaveBeenCalledWith("已取消导出");
 
-  responses.export_report_pdf = function () { throw new Error("磁盘已满"); };
+  responses.export_report = function () { throw new Error("磁盘已满"); };
   fire(btn, "click");
   await settle();
   expect(window.CS.toast.error).toHaveBeenCalledWith("磁盘已满");
   expect(btn.disabled).toBe(false);
+});
+
+test("成绩页可选择 PNG 图片格式导出", async function () {
+  await activate();
+  const select = document.querySelector(".export-format-select");
+  expect(select.value).toBe("pdf");
+  select.value = "png";
+
+  fire(document.querySelector(".export-btn"), "click");
+  await settle();
+
+  expect(calls.filter(function (c) { return c.method === "export_report"; })[0].payload)
+    .toEqual({ session_id: "s1", format: "png" });
+  expect(window.CS.toast.success).toHaveBeenCalledWith("成绩单已保存：D:/reports/s1.png");
+  expect(select.disabled).toBe(false);
 });
 
 test("返回首页标记缓存失效并跳转设置页", async function () {

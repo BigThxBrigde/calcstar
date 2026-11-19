@@ -57,7 +57,9 @@ beforeEach(function () {
         ]
       });
     },
-    export_report_pdf: function () { return { path: "D:/reports/s1.pdf" }; },
+    export_report: function (payload) {
+      return { path: payload.format === "png" ? "D:/reports/s1.png" : "D:/reports/s1.pdf" };
+    },
     reset_practice: function () {
       return { session_id: "s1", questions: [{ seq: 0, expression: "1 + 1 = ( )" }] };
     },
@@ -163,8 +165,8 @@ test("导出与重做分别调用后端并更新界面/共享状态", async func
   fire(rows[0].querySelector('[data-act="export"]'), "click");
   await settle();
 
-  expect(calls.filter(function (c) { return c.method === "export_report_pdf"; })[0].payload)
-    .toEqual({ session_id: 1 });
+  expect(calls.filter(function (c) { return c.method === "export_report"; })[0].payload)
+    .toEqual({ session_id: 1, format: "pdf" });
   expect(window.CS.mask.show).toHaveBeenCalledWith("正在生成成绩单…");
   expect(window.CS.mask.hide).toHaveBeenCalled();
   expect(window.CS.toast.success).toHaveBeenCalledWith("成绩单已保存：D:/reports/s1.pdf");
@@ -178,6 +180,16 @@ test("导出与重做分别调用后端并更新界面/共享状态", async func
   expect(window.CS.state.currentSession.session_id).toBe("s1");
   expect(window.CS.state.answers).toEqual({});
   expect(window.CS.router.showPage).toHaveBeenCalledWith("page-practice");
+});
+
+test("历史行可单独导出 PNG 图片成绩单", async function () {
+  const rows = document.querySelectorAll(".his-row");
+  fire(rows[0].querySelector('[data-act="export-png"]'), "click");
+  await settle();
+
+  expect(calls.filter(function (c) { return c.method === "export_report"; })[0].payload)
+    .toEqual({ session_id: 1, format: "png" });
+  expect(window.CS.toast.success).toHaveBeenCalledWith("成绩单已保存：D:/reports/s1.png");
 });
 
 test("行级删除需两次确认，成功后刷新当前页", async function () {
