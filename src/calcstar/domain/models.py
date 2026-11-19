@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from calcstar.config import OperationCategory
+from calcstar.config import BLANK_POSITION_LAST, OperationCategory
 
 
 @dataclass(frozen=True)
@@ -65,5 +65,5 @@ class PracticeConfig:
     include_parentheses: bool = False
     per_page: int = 10
     seed: int | None = None
-    blank_position: str = "last"
+    blank_position: str = BLANK_POSITION_LAST
     operand_count: int = 0

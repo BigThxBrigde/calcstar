@@ -21,6 +21,7 @@ import random
 from dataclasses import replace
 
 from calcstar.config import (
+    BLANK_POSITION_ANY,
     BLANK_POSITION_LAST,
     BLANK_POSITION_MIDDLE,
     OPERAND_COUNT_RANDOM,
@@ -650,7 +651,7 @@ def _blank_question(question: Question, rng: random.Random, mode: str) -> Questi
         return question
     if mode == BLANK_POSITION_MIDDLE:
         hide = True
-    elif mode == "any":
+    elif mode == BLANK_POSITION_ANY:
         hide = rng.random() >= 0.5
     else:
         return question

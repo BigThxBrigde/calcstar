@@ -5,6 +5,7 @@
 单窗口应用，关闭主窗口后 QApplication 随之结束、进程退出。
 """
 
+import logging
 import sys
 
 from PyQt5.QtCore import QUrl
@@ -14,6 +15,12 @@ from PyQt5.QtWebEngineWidgets import QWebEnginePage, QWebEngineProfile, QWebEngi
 from PyQt5.QtWidgets import QApplication, QFileDialog, QMainWindow
 
 from calcstar.config import get_icon_path, get_index_html_path
+
+logger = logging.getLogger(__name__)
+
+#: 主窗口初始/最小尺寸（像素）
+_WINDOW_SIZE = (1024, 720)
+_MIN_WINDOW_SIZE = (960, 640)
 
 
 def _make_report_exporter(window: QMainWindow):
@@ -58,8 +65,8 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("CalcStar · 口算练习")
-        self.resize(1024, 720)
-        self.setMinimumSize(960, 640)
+        self.resize(*_WINDOW_SIZE)
+        self.setMinimumSize(*_MIN_WINDOW_SIZE)
 
         # 应用图标：任务栏/标题栏/窗口均使用内置 ico（缺席时静默跳过）
         icon_path = get_icon_path()
@@ -89,6 +96,7 @@ class MainWindow(QMainWindow):
                     report_exporter=_make_report_exporter(self)
                 )
             except Exception:
+                logger.exception("创建后端桥接对象失败，前端调用将不可用")
                 self._bridge = None
             if self._bridge is not None:
                 self._channel.registerObject("bridge", self._bridge)

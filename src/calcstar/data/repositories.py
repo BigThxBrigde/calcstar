@@ -10,6 +10,8 @@ import sqlite3
 from datetime import datetime
 from typing import Optional
 
+from calcstar.config import BLANK_POSITION_LAST
+
 
 def _now() -> str:
     """返回当前本地时间的 ISO 格式字符串（秒级精度）。"""
@@ -26,7 +28,7 @@ def create_session(
     include_parentheses: bool,
     per_page: int,
     started_at: Optional[str] = None,
-    blank_position: str = "last",
+    blank_position: str = BLANK_POSITION_LAST,
     operand_count: int = 0,
 ) -> int:
     """创建一局练习会话，返回会话 id。

@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Optional, Union
 
 from calcstar.config import get_db_path
@@ -24,7 +25,7 @@ from calcstar.data.repositories import (
 )
 from calcstar.services.practice_service import SessionNotFoundError
 
-_DBPath = Union[str, "os.PathLike[str]"]
+_DBPath = Union[str, Path]
 
 
 class WrongBookEntryNotFoundError(Exception):

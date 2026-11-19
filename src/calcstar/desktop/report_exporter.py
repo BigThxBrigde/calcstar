@@ -31,16 +31,16 @@ SUPPORTED_FORMATS = ("pdf", "png")
 _PNG_DPI = 96.0
 
 
+class ReportExportError(RuntimeError):
+    """成绩单导出失败（含生成结果缺失等异常情况）。"""
+
+
 def normalize_format(fmt: str) -> str:
     """归一化导出格式；未知格式抛 :class:`ReportExportError`。"""
     value = str(fmt or "pdf").strip().lower().lstrip(".")
     if value not in SUPPORTED_FORMATS:
         raise ReportExportError(f"不支持的导出格式：{fmt}（仅支持 pdf / png）")
     return value
-
-
-class ReportExportError(RuntimeError):
-    """成绩单导出失败（含生成结果缺失等异常情况）。"""
 
 
 def _ensure_suffix(target: Path, fmt: str) -> Path:
