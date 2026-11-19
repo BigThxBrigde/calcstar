@@ -202,7 +202,8 @@
 .wrong-row {
   display: grid;
   grid-template-columns:
-    minmax(170px, 2fr) minmax(96px, 1fr) minmax(96px, 1fr) minmax(140px, 1.4fr);
+    minmax(170px, 2fr) minmax(96px, 1fr) minmax(96px, 1fr) minmax(140px, 1.4fr)
+    minmax(76px, 0.7fr);
   align-items: center;
   gap: 10px;
 }
@@ -287,6 +288,20 @@
   font-size: 14px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+}
+
+.wrong-actions {
+  display: inline-flex;
+  justify-content: center;
+}
+
+/* ---------- 分页 / 清空（复用 history.css 的 .his-pager / .his-clear-row） ---------- */
+.wrong-card .his-pager {
+  margin-top: 16px;
+}
+
+.wrong-card .his-clear-row {
+  margin-top: 12px;
 }
 
 /* ---------- 空状态 / 加载态 ---------- */
