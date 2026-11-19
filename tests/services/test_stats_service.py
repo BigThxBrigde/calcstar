@@ -6,7 +6,10 @@ from calcstar.services.practice_service import (
     PracticeService,
     SessionNotFoundError,
 )
-from calcstar.services.stats_service import StatsService
+from calcstar.services.stats_service import (
+    StatsService,
+    WrongBookEntryNotFoundError,
+)
 
 
 @pytest.fixture()
@@ -123,3 +126,24 @@ class TestWrongBook:
     def test_empty_wrong_book(self, practice, stats):
         """无错题时返回空列表。"""
         assert stats.list_wrong_book() == []
+
+    def test_page_delete_and_clear(self, practice, stats):
+        """服务层分页、单条删除（不存在报错）与清空错题本。"""
+        session_id = _create(practice)["session_id"]
+        _submit_with_wrong(practice, stats, session_id, wrong_seq=0)
+
+        page = stats.list_wrong_book_page(page=1, page_size=5)
+        assert page["total"] == 1 and page["page_size"] == 5
+        assert len(page["items"]) == 1
+        entry_id = page["items"][0]["id"]
+
+        assert stats.delete_wrong_book_entry(entry_id) is True
+        with pytest.raises(WrongBookEntryNotFoundError):
+            stats.delete_wrong_book_entry(entry_id)
+        assert stats.list_wrong_book() == []
+
+        other = _create(practice)["session_id"]
+        _submit_with_wrong(practice, stats, other, wrong_seq=0)
+        assert stats.clear_wrong_book() == 1
+        assert stats.list_wrong_book() == []
+        assert stats.list_history(page=1, page_size=10)["total"] == 2

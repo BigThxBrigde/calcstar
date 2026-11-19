@@ -406,6 +406,83 @@ def list_wrong_book(
     return [dict(r) for r in rows]
 
 
+def list_wrong_book_page(
+    conn: sqlite3.Connection,
+    category: Optional[str] = None,
+    order_by: str = "wrong_count",
+    page: int = 1,
+    page_size: int = 10,
+) -> dict:
+    """分页列出错题本条目，返回条目与总数。
+
+    Args:
+        conn: 数据库连接；
+        category: 类别筛选，None 表示全部类别；
+        order_by: 排序字段，支持 "wrong_count" 与 "last_wrong_at"；
+        page: 页码，从 1 起；
+        page_size: 每页条数。
+
+    Returns:
+        {"items": 错题 dict 列表, "total": 总条数,
+         "page": 页码, "page_size": 每页条数}。
+    """
+    column = "last_wrong_at" if order_by == "last_wrong_at" else "wrong_count"
+    where = ""
+    params: list = []
+    if category is not None:
+        where = " WHERE category = ?"
+        params.append(category)
+    total = int(
+        conn.execute(
+            f"SELECT COUNT(*) FROM wrong_book{where}", params
+        ).fetchone()[0]
+    )
+    page = max(1, int(page))
+    page_size = max(1, int(page_size))
+    rows = conn.execute(
+        f"SELECT * FROM wrong_book{where} ORDER BY {column} DESC, id DESC LIMIT ? OFFSET ?",
+        (*params, page_size, (page - 1) * page_size),
+    ).fetchall()
+    return {
+        "items": [dict(r) for r in rows],
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }
+
+
+def delete_wrong_book_entry(conn: sqlite3.Connection, entry_id: int) -> bool:
+    """删除单条错题条目。
+
+    Args:
+        conn: 数据库连接；
+        entry_id: 错题条目 id。
+
+    Returns:
+        条目存在且已删除返回 True；不存在返回 False（幂等）。
+    """
+    cur = conn.execute("DELETE FROM wrong_book WHERE id = ?", (entry_id,))
+    conn.commit()
+    return cur.rowcount > 0
+
+
+def clear_wrong_book(conn: sqlite3.Connection) -> int:
+    """清空错题本（仅错题聚合表，不影响练习历史）。
+
+    Args:
+        conn: 数据库连接。
+
+    Returns:
+        被删除的错题条目数量。
+    """
+    deleted = int(
+        conn.execute("SELECT COUNT(*) FROM wrong_book").fetchone()[0]
+    )
+    conn.execute("DELETE FROM wrong_book")
+    conn.commit()
+    return deleted
+
+
 def clear_history(conn: sqlite3.Connection) -> int:
     """清空全部练习历史（sessions 及随会话级联的 questions 明细）。
 

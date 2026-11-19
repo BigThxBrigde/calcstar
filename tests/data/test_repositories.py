@@ -323,6 +323,59 @@ class TestQueries:
         assert repositories.list_wrong_book(conn, category="mul") == []
 
 
+class TestWrongBookManagement:
+    def _seed_wrong_rows(self, conn):
+        """一局 5 题全部答错，聚合出 5 条错题。"""
+        session_id, questions = _new_session(conn)
+        answers = {q["seq"]: q["answer"] + 1000 for q in questions}
+        repositories.submit_answers(
+            conn, session_id, answers, _graded_for(questions, answers), 60.0
+        )
+        return session_id
+
+    def test_list_wrong_book_page(self, conn):
+        """分页返回 items/total/page/page_size，越界页返回空且不报错。"""
+        self._seed_wrong_rows(conn)
+        first = repositories.list_wrong_book_page(conn, page=1, page_size=2)
+        assert first["total"] == 5
+        assert first["page"] == 1
+        assert first["page_size"] == 2
+        assert len(first["items"]) == 2
+
+        last = repositories.list_wrong_book_page(conn, page=3, page_size=2)
+        assert len(last["items"]) == 1
+        beyond = repositories.list_wrong_book_page(conn, page=9, page_size=2)
+        assert beyond["items"] == [] and beyond["total"] == 5
+
+        normalized = repositories.list_wrong_book_page(conn, page=0, page_size=0)
+        assert normalized["page"] == 1 and normalized["page_size"] == 1
+
+        filtered = repositories.list_wrong_book_page(
+            conn, category="mixed", page=1, page_size=10
+        )
+        assert filtered["total"] == 5
+        assert repositories.list_wrong_book_page(
+            conn, category="mul", page=1, page_size=10
+        )["total"] == 0
+
+    def test_delete_wrong_book_entry(self, conn):
+        """单条删除幂等，且不影响其余条目与练习历史。"""
+        session_id = self._seed_wrong_rows(conn)
+        entry_id = repositories.list_wrong_book(conn)[0]["id"]
+        assert repositories.delete_wrong_book_entry(conn, entry_id) is True
+        assert len(repositories.list_wrong_book(conn)) == 4
+        assert repositories.delete_wrong_book_entry(conn, entry_id) is False
+        assert repositories.get_session_detail(conn, session_id) is not None
+
+    def test_clear_wrong_book(self, conn):
+        """清空错题本返回条数，练习历史保留；空库清空返回 0。"""
+        session_id = self._seed_wrong_rows(conn)
+        assert repositories.clear_wrong_book(conn) == 5
+        assert repositories.list_wrong_book(conn) == []
+        assert repositories.get_session_detail(conn, session_id) is not None
+        assert repositories.clear_wrong_book(conn) == 0
+
+
 class TestClearHistory:
     def test_clear_removes_sessions_and_questions(self, conn):
         """清空后 sessions/questions 为空，返回删除的会话数。"""

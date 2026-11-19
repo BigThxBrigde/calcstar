@@ -14,14 +14,21 @@ from calcstar.config import get_db_path
 from calcstar.data.database import connect, init_db
 from calcstar.data.repositories import (
     clear_history,
+    clear_wrong_book,
     delete_session,
+    delete_wrong_book_entry,
     get_session_detail,
     list_history,
     list_wrong_book,
+    list_wrong_book_page,
 )
 from calcstar.services.practice_service import SessionNotFoundError
 
 _DBPath = Union[str, "os.PathLike[str]"]
+
+
+class WrongBookEntryNotFoundError(Exception):
+    """错题条目不存在。"""
 
 
 class StatsService:
@@ -109,3 +116,44 @@ class StatsService:
             错题字典列表，按指定字段倒序排列。
         """
         return list_wrong_book(self._conn, category=category, order_by=order_by)
+
+    def list_wrong_book_page(
+        self,
+        category: Optional[str] = None,
+        order_by: str = "wrong_count",
+        page: int = 1,
+        page_size: int = 10,
+    ) -> dict:
+        """分页列出错题本条目。
+
+        Args:
+            category: 类别筛选，None 表示全部类别；
+            order_by: 排序字段，"wrong_count" 或 "last_wrong_at"；
+            page: 页码，从 1 起；
+            page_size: 每页条数（由前端按设置页的每页题数传入）。
+
+        Returns:
+            {"items": 错题 dict 列表, "total": 总条数,
+             "page": 页码, "page_size": 每页条数}。
+        """
+        return list_wrong_book_page(
+            self._conn,
+            category=category,
+            order_by=order_by,
+            page=page,
+            page_size=page_size,
+        )
+
+    def delete_wrong_book_entry(self, entry_id: int) -> bool:
+        """删除单条错题条目。
+
+        Raises:
+            WrongBookEntryNotFoundError: 条目不存在。
+        """
+        if not delete_wrong_book_entry(self._conn, entry_id):
+            raise WrongBookEntryNotFoundError(f"错题条目不存在：id={entry_id}")
+        return True
+
+    def clear_wrong_book(self) -> int:
+        """清空错题本，返回被删除的条目数量（不影响练习历史）。"""
+        return clear_wrong_book(self._conn)

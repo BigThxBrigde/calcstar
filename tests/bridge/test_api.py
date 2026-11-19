@@ -175,6 +175,39 @@ class TestQueries:
         resp = json.loads(bridge.list_wrong_book("{}"))
         assert len(resp["data"]) == 5
 
+    def test_wrong_book_paging_delete_and_clear(self, bridge):
+        """错题本分页、单条删除与清空：统一响应信封与错误返回。"""
+        data = _create(bridge)
+        answers = _answers_via_bridge(bridge, data["session_id"])
+        bridge.submit_practice(json.dumps({
+            "session_id": data["session_id"],
+            "answers": {str(seq): ans + 7 for seq, ans in answers.items()},
+            "duration_seconds": 30,
+        }))
+
+        resp = json.loads(bridge.list_wrong_book_page(json.dumps({
+            "page": 1, "page_size": 2
+        })))
+        assert resp["ok"] is True
+        assert resp["data"]["total"] == 5
+        assert resp["data"]["page_size"] == 2
+        assert len(resp["data"]["items"]) == 2
+        entry_id = resp["data"]["items"][0]["id"]
+
+        resp = json.loads(bridge.delete_wrong_book_entry(
+            json.dumps({"id": entry_id})
+        ))
+        assert resp["ok"] is True and resp["data"]["deleted"] is True
+        resp = json.loads(bridge.delete_wrong_book_entry(
+            json.dumps({"id": 9999})
+        ))
+        assert resp["ok"] is False and "不存在" in resp["error"]
+
+        resp = json.loads(bridge.clear_wrong_book("{}"))
+        assert resp["ok"] is True and resp["data"]["deleted"] == 4
+        resp = json.loads(bridge.list_wrong_book_page("{}"))
+        assert resp["data"]["total"] == 0
+
     def test_get_session_detail_missing(self, bridge):
         """不存在的会话：ok=False 且 error 提示不存在。"""
         resp = json.loads(bridge.get_session_detail(

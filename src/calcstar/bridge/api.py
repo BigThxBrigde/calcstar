@@ -203,6 +203,46 @@ class CalcStarBridge(QObject):
 
         return self._respond(run)
 
+    @pyqtSlot(str, result=str)
+    def list_wrong_book_page(self, payload: str) -> str:
+        """分页查询错题本：payload 为 {category, order_by, page, page_size}。
+
+        返回 {items, total, page, page_size}；page_size 由前端按设置页
+        的每页题数传入。
+        """
+        def run() -> dict:
+            data = self._parse_payload(payload)
+            return self._stats.list_wrong_book_page(
+                category=data.get("category"),
+                order_by=data.get("order_by", "wrong_count"),
+                page=int(data.get("page", 1)),
+                page_size=int(data.get("page_size", 10)),
+            )
+
+        return self._respond(run)
+
+    @pyqtSlot(str, result=str)
+    def delete_wrong_book_entry(self, payload: str) -> str:
+        """删除单条错题：payload 为 {id}；返回 {deleted: true}。"""
+        def run() -> dict:
+            data = self._parse_payload(payload)
+            self._stats.delete_wrong_book_entry(int(data["id"]))
+            return {"deleted": True}
+
+        return self._respond(run)
+
+    @pyqtSlot(str, result=str)
+    def clear_wrong_book(self, payload: str) -> str:
+        """清空错题本：payload 忽略；返回 {deleted: 错题条目数}。
+
+        仅清空错题聚合表，练习历史保留。
+        """
+        def run() -> dict:
+            self._parse_payload(payload)
+            return {"deleted": self._stats.clear_wrong_book()}
+
+        return self._respond(run)
+
     # ---- 设置持久化 ----
 
     @pyqtSlot(str, result=str)
